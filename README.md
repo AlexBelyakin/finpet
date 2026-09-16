@@ -50,7 +50,7 @@ flutter pub get
 flutter run -d web-server --web-port 8080 --web-hostname 127.0.0.1
 ```
 
-Открыть `http://127.0.0.1:8080` (в Cursor: Simple Browser).
+Открыть `http://127.0.0.1:8080` (в браузере либо ide).
 
 Остановить сервер: `q` в том терминале. Если порт занят — закрыть старый `dartvm` и запустить снова.
 
