@@ -92,7 +92,7 @@ flutter pub get
 flutter run -d web-server --web-port 8080 --web-hostname 127.0.0.1
 ```
 
-Открыть **http://127.0.0.1:8080** (в Cursor: Simple Browser). Chrome сам не нужен.
+Открыть **http://127.0.0.1:8080** (в браузере либо IDE). Chrome сам не нужен.
 
 ### В Cursor
 F5, конфигурация **Finni** — тот же web-server на `127.0.0.1:8080`.
