@@ -8,12 +8,15 @@ abstract final class Catalog {
     PetLook(species: PetSpecies.cat, color: PetColor.peach),
     PetLook(species: PetSpecies.cat, color: PetColor.mint),
     PetLook(species: PetSpecies.cat, color: PetColor.sky),
+    PetLook(species: PetSpecies.cat, color: PetColor.wave),
     PetLook(species: PetSpecies.fox, color: PetColor.peach),
     PetLook(species: PetSpecies.fox, color: PetColor.mint),
     PetLook(species: PetSpecies.fox, color: PetColor.sky),
+    PetLook(species: PetSpecies.fox, color: PetColor.wave),
     PetLook(species: PetSpecies.bird, color: PetColor.peach),
     PetLook(species: PetSpecies.bird, color: PetColor.mint),
     PetLook(species: PetSpecies.bird, color: PetColor.sky),
+    PetLook(species: PetSpecies.bird, color: PetColor.wave),
   ];
 
   static const shop = [
@@ -97,12 +100,53 @@ abstract final class Catalog {
       satietyDelta: 0,
       moodDelta: 20,
     ),
+    ShopItem(
+      id: 'n5',
+      name: 'Подушка',
+      price: 18,
+      kind: ExpenseKind.need,
+      emoji: '🛏️',
+      effectLabel: 'Сон и уют',
+      satietyDelta: 0,
+      moodDelta: 9,
+    ),
+    ShopItem(
+      id: 'n6',
+      name: 'Витамины',
+      price: 22,
+      kind: ExpenseKind.need,
+      emoji: '💊',
+      effectLabel: 'Немного сытости и бодрости',
+      satietyDelta: 10,
+      moodDelta: 6,
+    ),
+    ShopItem(
+      id: 'w5',
+      name: 'Книжка',
+      price: 28,
+      kind: ExpenseKind.want,
+      emoji: '📘',
+      effectLabel: 'Интересно, но не еда',
+      satietyDelta: 0,
+      moodDelta: 16,
+    ),
+    ShopItem(
+      id: 'w6',
+      name: 'Мыльные пузыри',
+      price: 22,
+      kind: ExpenseKind.want,
+      emoji: '🫧',
+      effectLabel: 'Весёлая игра',
+      satietyDelta: 0,
+      moodDelta: 14,
+    ),
   ];
 
   static const goals = [
     GoalDef(id: 'g1', title: 'Уютный домик', cost: 180, emoji: '🏠'),
     GoalDef(id: 'g2', title: 'Костюм героя', cost: 260, emoji: '🦸'),
     GoalDef(id: 'g3', title: 'Запас лакомств', cost: 340, emoji: '🍬'),
+    GoalDef(id: 'g4', title: 'Самокат', cost: 420, emoji: '🛴'),
   ];
 
   static const tasks = [
@@ -221,7 +265,7 @@ abstract final class Catalog {
       type: TaskType.choice,
       title: 'Внезапная поездка',
       story:
-          'Нужен проезд за 15 монет. В кармане мало, в копилке есть запас на домик. Что сделать?',
+          'Нужен проезд за 15 монет. Монет мало, в копилке есть запас на домик. Что сделать?',
       reward: 24,
       options: [
         TaskOption(
@@ -245,6 +289,82 @@ abstract final class Catalog {
       explainOther:
           'Копилка — для цели. Если её снимать без подтверждения мысли, домик снова далеко. Желаемое можно перенести.',
     ),
+    TaskDef(
+      id: 't7',
+      theme: TaskTheme.budget,
+      type: TaskType.choice,
+      title: 'Друг зовёт в кино',
+      story:
+          'Билет 50 монет. На корм осталось ровно 20, в копилке цель. Как поступить?',
+      reward: 18,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Сначала корм, кино — если останется',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'Купить билет, корм как-нибудь потом',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Снять всю копилку на билеты двоим',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Нужное не отменяют из‑за желаемого. Друга можно позвать позже, когда план позволит.',
+      explainOther:
+          'Если потратить последнее на кино, питомцу может не хватить еды. Копилку не ломают ради одного вечера.',
+    ),
+    TaskDef(
+      id: 't8',
+      theme: TaskTheme.purchases,
+      type: TaskType.choice,
+      title: 'Реклама «успей купить»',
+      story:
+          'На экране яркая игрушка: «осталась одна». Ты её не планировал. Что сделать?',
+      reward: 16,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Подождать день и сверить с планом',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'Купить сразу, пока не забрали',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Купить две, вдруг пригодится',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Спешка — частый трюк. Пауза помогает отличить желание от нужного.',
+      explainOther:
+          '«Успей» давит, чтобы не подумать. Лишняя покупка бьёт по корму и копилке.',
+    ),
+    TaskDef(
+      id: 't9',
+      theme: TaskTheme.savings,
+      type: TaskType.allocate,
+      title: 'Подарок на день рождения',
+      story:
+          'Тебе дали 50 монет. Часть хочется сразу потратить, часть — к цели. Разложи: нужное, желаемое, копилка.',
+      reward: 22,
+      allocateTotal: 50,
+      minNeed: 10,
+      minSave: 15,
+      explainGood:
+          'Подарок тоже можно планировать: часть себе сейчас, часть — будущей цели.',
+      explainOther:
+          'Если всё уйдёт в желаемое, цель почти не двинется. Попробуй отложить хотя бы 15.',
+    ),
   ];
 
   static const glossary = [
@@ -254,6 +374,11 @@ abstract final class Catalog {
     ('План', 'Как ты заранее делишь деньги: нужное, желаемое, копилка.'),
     ('Факт', 'Как ты на самом деле потратил деньги за неделю.'),
     ('Игровая валюта', 'Монеты только в игре. Их нельзя обменять на настоящие деньги.'),
+    ('Нужное', 'Еда, вода, уход — то, без чего питомец слабеет.'),
+    ('Желаемое', 'Игрушки и вкусности. Их можно перенести на потом.'),
+    ('Цель', 'Большая покупка из копилки: домик, костюм, запас, самокат.'),
+    ('Неделя', 'Игровой период: сначала план, потом покупки и копилка.'),
+    ('Демо-режим', 'Недели идут подряд, без ожидания настоящих дней. Это для учёбы.'),
   ];
 
   static ShopItem itemById(String id) => shop.firstWhere((e) => e.id == id);

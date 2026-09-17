@@ -34,6 +34,8 @@ class _AdultScreenState extends State<AdultScreen> {
           children: [
             const Text('Чтобы войти, реши пример. Так ребёнок не сбросит прогресс случайно.'),
             const SizedBox(height: 16),
+            const Icon(Icons.family_restroom_rounded, size: 48),
+            const SizedBox(height: 16),
             const Text('Сколько будет 8 + 5?'),
             const SizedBox(height: 8),
             TextField(

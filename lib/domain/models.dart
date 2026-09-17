@@ -1,6 +1,6 @@
 enum PetSpecies { cat, fox, bird }
 
-enum PetColor { peach, mint, sky }
+enum PetColor { peach, mint, sky, wave }
 
 enum PeriodPhase { planning, active, review }
 
@@ -28,6 +28,7 @@ class PetLook {
         PetColor.peach => 'Персик',
         PetColor.mint => 'Мята',
         PetColor.sky => 'Небо',
+        PetColor.wave => 'Волна',
       };
 
   Map<String, dynamic> toJson() => {
@@ -320,6 +321,8 @@ class GameProfile {
     required this.history,
     required this.lastMessage,
     required this.lastNextStep,
+    this.gamesPlayed = 0,
+    this.minigameCoinsThisPeriod = 0,
   });
 
   final String playerName;
@@ -340,6 +343,8 @@ class GameProfile {
   final List<PeriodSummary> history;
   final String lastMessage;
   final String lastNextStep;
+  final int gamesPlayed;
+  final int minigameCoinsThisPeriod;
 
   static GameProfile empty() {
     return const GameProfile(
@@ -358,6 +363,8 @@ class GameProfile {
       history: [],
       lastMessage: '',
       lastNextStep: '',
+      gamesPlayed: 0,
+      minigameCoinsThisPeriod: 0,
     );
   }
 
@@ -383,6 +390,8 @@ class GameProfile {
     List<PeriodSummary>? history,
     String? lastMessage,
     String? lastNextStep,
+    int? gamesPlayed,
+    int? minigameCoinsThisPeriod,
   }) {
     return GameProfile(
       playerName: playerName ?? this.playerName,
@@ -403,6 +412,9 @@ class GameProfile {
       history: history ?? this.history,
       lastMessage: lastMessage ?? this.lastMessage,
       lastNextStep: lastNextStep ?? this.lastNextStep,
+      gamesPlayed: gamesPlayed ?? this.gamesPlayed,
+      minigameCoinsThisPeriod:
+          minigameCoinsThisPeriod ?? this.minigameCoinsThisPeriod,
     );
   }
 
@@ -425,6 +437,8 @@ class GameProfile {
         'history': history.map((e) => e.toJson()).toList(),
         'lastMessage': lastMessage,
         'lastNextStep': lastNextStep,
+        'gamesPlayed': gamesPlayed,
+        'minigameCoinsThisPeriod': minigameCoinsThisPeriod,
       };
 
   factory GameProfile.fromJson(Map<String, dynamic> json) {
@@ -457,6 +471,8 @@ class GameProfile {
           .toList(),
       lastMessage: json['lastMessage'] as String? ?? '',
       lastNextStep: json['lastNextStep'] as String? ?? '',
+      gamesPlayed: json['gamesPlayed'] as int? ?? 0,
+      minigameCoinsThisPeriod: json['minigameCoinsThisPeriod'] as int? ?? 0,
     );
   }
 }

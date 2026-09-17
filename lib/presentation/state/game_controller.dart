@@ -81,6 +81,19 @@ class GameController extends ChangeNotifier {
     return result;
   }
 
+  Future<EngineResult> rewardMinigame({
+    required String title,
+    required int coins,
+  }) async {
+    final result = Economy.rewardMinigame(
+      profile,
+      title: title,
+      requested: coins,
+    );
+    if (result.ok) await _commit(result);
+    return result;
+  }
+
   Future<EngineResult> closePeriod() async {
     final result = Economy.closePeriod(profile);
     if (result.ok) await _commit(result);

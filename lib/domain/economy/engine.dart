@@ -56,7 +56,7 @@ abstract final class Economy {
       periodIndex: 1,
       phase: PeriodPhase.planning,
       lastMessage:
-          'Стартовый карман: ${Catalog.startIncome} монет. Сначала составь план на неделю.',
+          'Стартовые монеты: ${Catalog.startIncome}. Сначала составь план на неделю.',
       lastNextStep: 'Открой «План» и разложи деньги на нужное, желаемое и копилку.',
     );
     profile = withLedger(
@@ -64,7 +64,7 @@ abstract final class Economy {
       amount: Catalog.startIncome,
       isEarn: true,
       source: 'Доход',
-      title: 'Стартовые карманные',
+      title: 'Стартовые монеты',
     );
     return EngineResult(
       profile: profile,
@@ -202,7 +202,7 @@ abstract final class Economy {
       return EngineResult(
         profile: profile,
         ok: false,
-        message: 'Не хватает монет в кармане. В минус нельзя.',
+        message: 'Не хватает монет. В минус нельзя.',
         nextStep: 'Отложи меньшую сумму или выполни задание.',
       );
     }
@@ -430,9 +430,10 @@ abstract final class Economy {
       spentNeed: 0,
       spentWant: 0,
       savedThisPeriod: 0,
+      minigameCoinsThisPeriod: 0,
       history: [...profile.history, summary],
       lastMessage:
-          'Неделя ${profile.periodIndex} закрыта. $note  Карманные +${Catalog.periodIncome}. Баланс: ${profile.coins + Catalog.periodIncome}.',
+          'Неделя ${profile.periodIndex} закрыта. $note  Монеты +${Catalog.periodIncome}. Баланс: ${profile.coins + Catalog.periodIncome}.',
       lastNextStep: 'Составь новый план. Так питомец растёт от серии решений, не от одной покупки.',
     );
     next = withLedger(
@@ -440,7 +441,7 @@ abstract final class Economy {
       amount: Catalog.periodIncome,
       isEarn: true,
       source: 'Доход',
-      title: 'Карманные за новую неделю',
+      title: 'Монеты за новую неделю',
     );
     return EngineResult(
       profile: next,
@@ -459,6 +460,53 @@ abstract final class Economy {
     return close(plan.need, fact.need) &&
         close(plan.want, fact.want) &&
         close(plan.save, fact.save);
+  }
+
+  static const maxMinigameCoinsPerPeriod = 80;
+
+  static EngineResult rewardMinigame(
+    GameProfile profile, {
+    required String title,
+    required int requested,
+  }) {
+    if (profile.pet == null) {
+      return EngineResult(
+        profile: profile,
+        ok: false,
+        message: 'Сначала создай питомца.',
+        nextStep: 'Вернись к созданию питомца.',
+      );
+    }
+    final room =
+        (maxMinigameCoinsPerPeriod - profile.minigameCoinsThisPeriod).clamp(0, maxMinigameCoinsPerPeriod);
+    final coins = requested.clamp(0, 80).clamp(0, room);
+    final pet = profile.pet!;
+    final nextPet = pet.copyWith(mood: clampStat(pet.mood + 6));
+    var next = profile.copyWith(
+      pet: nextPet,
+      coins: profile.coins + coins,
+      gamesPlayed: profile.gamesPlayed + 1,
+      minigameCoinsThisPeriod: profile.minigameCoinsThisPeriod + coins,
+      lastMessage: coins == 0
+          ? 'Игра пройдена. На этой неделе монет за игры уже максимум — можно играть просто так.'
+          : '$title: +$coins монет. Баланс: ${profile.coins + coins}.',
+      lastNextStep: 'Монеты копятся к плану, покупкам и копилке.',
+    );
+    if (coins > 0) {
+      next = withLedger(
+        next,
+        amount: coins,
+        isEarn: true,
+        source: 'Игра',
+        title: title,
+      );
+    }
+    return EngineResult(
+      profile: next,
+      ok: true,
+      message: next.lastMessage,
+      nextStep: next.lastNextStep,
+    );
   }
 
   static String goalEta(GameProfile profile) {

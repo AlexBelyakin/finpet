@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/theme/app_theme.dart';
-import '../screens/glossary_screen.dart';
+import 'package:finpet/presentation/screens/glossary_screen.dart';
+import 'package:finpet/presentation/widgets/icons.dart';
 
 class FinniScaffold extends StatelessWidget {
   const FinniScaffold({
@@ -17,6 +19,7 @@ class FinniScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pad = AppLayout.pagePadding(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -30,15 +33,23 @@ class FinniScaffold extends StatelessWidget {
                 ),
               );
             },
-            icon: const Icon(Icons.help_outline),
+            icon: const Icon(FinniIcons.help),
           ),
         ],
       ),
       floatingActionButton: floating,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: body,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: AppLayout.isWide(context) ? 980 : double.infinity,
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(pad.left, 0, pad.right, pad.bottom),
+              child: body,
+            ),
+          ),
         ),
       ),
     );
@@ -70,10 +81,13 @@ class SurfaceCard extends StatelessWidget {
       child: child,
     );
     if (onTap == null) return card;
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: card,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: card,
+      ),
     );
   }
 }

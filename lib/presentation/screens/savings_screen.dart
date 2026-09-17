@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/assets.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/domain/economy/engine.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
@@ -30,7 +31,14 @@ class _SavingsScreenState extends State<SavingsScreen> {
           title: 'Копилка',
           body: ListView(
             children: [
-              Text(Economy.goalEta(p)),
+              Center(child: Image.asset(AppAssets.logo, height: 120)),
+              const SizedBox(height: 8),
+              Text(Economy.goalEta(p), textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              const Text(
+                'Выбери цель — копилка работает на неё.',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 12),
               ...Catalog.goals.map((item) {
                 final selected = item.id == p.goalId;

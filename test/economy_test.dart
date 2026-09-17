@@ -61,4 +61,16 @@ void main() {
     expect(closed.profile.periodIndex, 2);
     expect(closed.profile.phase, PeriodPhase.planning);
   });
+
+  test('мини-игра даёт монеты и не ломает копилку', () {
+    final result = Economy.rewardMinigame(
+      start,
+      title: 'Игра «Надо или хочу?»',
+      requested: 24,
+    );
+    expect(result.ok, isTrue);
+    expect(result.profile.coins, start.coins + 24);
+    expect(result.profile.gamesPlayed, 1);
+    expect(result.profile.savings, start.savings);
+  });
 }

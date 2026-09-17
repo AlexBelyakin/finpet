@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/icons.dart';
 import '../widgets/shell.dart';
 
 class ProgressScreen extends StatelessWidget {
@@ -18,10 +20,19 @@ class ProgressScreen extends StatelessWidget {
       body: ListView(
         children: [
           SurfaceCard(
-            child: Text(
-              goal == null
-                  ? 'Цель не выбрана.'
-                  : 'Цель «${goal.title}»: ${p.savings} из ${goal.cost}.',
+            child: Row(
+              children: [
+                const Icon(FinniIcons.savings, color: AppTheme.mint, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    goal == null
+                        ? 'Цель не выбрана.'
+                        : 'Цель «${goal.title}»: ${p.savings} из ${goal.cost}.',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
@@ -31,6 +42,7 @@ class ProgressScreen extends StatelessWidget {
           ...Catalog.tasks.where((t) => p.doneTaskIds.contains(t.id)).map(
                 (t) => ListTile(
                   contentPadding: EdgeInsets.zero,
+                  leading: Icon(FinniIcons.forTask(t.theme)),
                   title: Text(t.title),
                   subtitle: Text(t.themeLabel),
                 ),
@@ -59,6 +71,10 @@ class ProgressScreen extends StatelessWidget {
           ...p.ledger.take(12).map(
                 (e) => ListTile(
                   contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    e.isEarn ? Icons.add_circle_rounded : Icons.remove_circle_rounded,
+                    color: e.isEarn ? AppTheme.mint : AppTheme.peach,
+                  ),
                   title: Text(e.title),
                   subtitle: Text(e.source),
                   trailing: Text('${e.isEarn ? '+' : '-'}${e.amount}'),

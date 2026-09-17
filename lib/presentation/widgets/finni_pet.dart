@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/assets.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
 
@@ -12,67 +15,195 @@ class RoomBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFB9E4F0),
-            Color(0xFFFFF1D6),
-            Color(0xFFE7F6EE),
-          ],
-          stops: [0, 0.45, 1],
+        image: DecorationImage(
+          image: AssetImage(AppAssets.bgRoom),
+          fit: BoxFit.cover,
+          alignment: Alignment(0, -0.12),
         ),
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: 28,
-            right: 28,
-            child: Container(
-              width: 78,
-              height: 78,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF4B0).withValues(alpha: 0.85),
-                shape: BoxShape.circle,
+      child: child,
+    );
+  }
+}
+
+class SplashBackground extends StatelessWidget {
+  const SplashBackground({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(AppAssets.bgSplash),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+class PetImage extends StatelessWidget {
+  const PetImage({
+    super.key,
+    required this.look,
+    this.size = 180,
+    this.circle = true,
+  });
+
+  final PetLook look;
+  final double size;
+  final bool circle;
+
+  @override
+  Widget build(BuildContext context) {
+    final image = Image.asset(
+      AppAssets.pet(look),
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+    );
+    if (!circle) {
+      return SizedBox(width: size, height: size, child: image);
+    }
+    return SizedBox(
+      width: size,
+      height: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppTheme.petTint(look.color).withValues(alpha: 0.18),
+        ),
+        child: ClipOval(child: image),
+      ),
+    );
+  }
+}
+
+/// PNG-питомец с объёмом: перспектива, дыхание, тень, лёгкий поворот.
+class LivingPet extends StatefulWidget {
+  const LivingPet({
+    super.key,
+    required this.look,
+    this.size = 220,
+    this.mood = 80,
+    this.onTap,
+  });
+
+  final PetLook look;
+  final double size;
+  final int mood;
+  final VoidCallback? onTap;
+
+  @override
+  State<LivingPet> createState() => _LivingPetState();
+}
+
+class _LivingPetState extends State<LivingPet> with TickerProviderStateMixin {
+  late final AnimationController _idle;
+  late final AnimationController _tap;
+
+  @override
+  void initState() {
+    super.initState();
+    _idle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+    _tap = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+  }
+
+  @override
+  void dispose() {
+    _idle.dispose();
+    _tap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final energy = (0.55 + widget.mood / 220).clamp(0.55, 1.0);
+    return GestureDetector(
+      onTap: widget.onTap == null
+          ? null
+          : () {
+              _tap.forward(from: 0);
+              widget.onTap!();
+            },
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_idle, _tap]),
+        builder: (context, child) {
+          final t = _idle.value * math.pi * 2;
+          final bounce = math.sin(t) * 7 * energy;
+          final tilt = math.sin(t * 0.5) * 0.18;
+          final squash = 1 + math.sin(t) * 0.025 * energy;
+          final tapLift = Curves.easeOut.transform(_tap.value);
+          final pop = 1 + math.sin(tapLift * math.pi) * 0.08;
+          final shadow = (1.05 - bounce.abs() / 28).clamp(0.72, 1.1);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Transform(
+                alignment: Alignment.bottomCenter,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.0016)
+                  ..rotateX(0.16)
+                  ..rotateY(tilt)
+                  ..translateByDouble(0, -bounce - tapLift * 10, 0, 1)
+                  ..scaleByDouble(squash * pop, (2 - squash) * pop, 1, 1),
+                child: child,
               ),
-            ),
-          ),
-          Positioned(
-            top: 64,
-            left: 20,
-            child: Container(
-              width: 92,
-              height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFF8EC5E8).withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white, width: 4),
+              Transform.scale(
+                scaleX: 1.15 * shadow,
+                scaleY: 0.55 * shadow,
+                child: Container(
+                  width: widget.size * 0.62,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: 90,
-              decoration: const BoxDecoration(
-                color: Color(0xFFD8B48A),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ],
+          );
+        },
+        child: SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: widget.size * 0.86,
+                height: widget.size * 0.86,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.55),
+                      AppTheme.petTint(widget.look.color).withValues(alpha: 0.08),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.2, 0.65, 1],
+                  ),
+                ),
               ),
-            ),
+              PetImage(look: widget.look, size: widget.size, circle: false),
+            ],
           ),
-          Align(
-            alignment: const Alignment(0, 0.72),
-            child: Container(
-              width: 210,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFF7BC6A6).withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(40),
-              ),
-            ),
-          ),
-          child,
-        ],
+        ),
       ),
     );
   }
@@ -84,120 +215,49 @@ class FinniPetView extends StatelessWidget {
     required this.pet,
     this.size = 180,
     this.showCaption = true,
+    this.onTap,
   });
 
   final Pet pet;
   final double size;
   final bool showCaption;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final scale = switch (pet.stage) {
-      1 => 0.82,
+      1 => 0.9,
       2 => 1.0,
-      _ => 1.16,
+      _ => 1.12,
     };
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Transform.scale(
           scale: scale,
-          child: CustomPaint(
-            size: Size.square(size),
-            painter: _PetPainter(pet.look),
+          child: LivingPet(
+            look: pet.look,
+            size: size,
+            mood: pet.mood,
+            onTap: onTap,
           ),
         ),
         if (showCaption) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
           Text(
             pet.name,
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
               color: AppTheme.ink,
             ),
           ),
           Text(
             '${pet.look.speciesLabel} · ${pet.stageLabel}',
-            style: TextStyle(color: AppTheme.ink.withValues(alpha: 0.7)),
+            style: TextStyle(color: AppTheme.ink.withValues(alpha: 0.72)),
           ),
         ],
       ],
     );
   }
-}
-
-class _PetPainter extends CustomPainter {
-  _PetPainter(this.look);
-
-  final PetLook look;
-
-  Color get fill => switch (look.color) {
-        PetColor.peach => const Color(0xFFFFB38A),
-        PetColor.mint => const Color(0xFF7BC6A6),
-        PetColor.sky => const Color(0xFF8EC5E8),
-      };
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final body = Paint()..color = fill;
-    final dark = Paint()..color = const Color(0xFF3A2F2A);
-    final white = Paint()..color = Colors.white;
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx, cy + 18), width: 118, height: 100),
-      body,
-    );
-    canvas.drawCircle(Offset(cx, cy - 18), 48, body);
-
-    if (look.species == PetSpecies.fox) {
-      final path = Path()
-        ..moveTo(cx - 38, cy - 40)
-        ..lineTo(cx - 58, cy - 78)
-        ..lineTo(cx - 10, cy - 50)
-        ..moveTo(cx + 38, cy - 40)
-        ..lineTo(cx + 58, cy - 78)
-        ..lineTo(cx + 10, cy - 50);
-      canvas.drawPath(path, body);
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(cx + 70, cy + 28), width: 50, height: 22),
-        body,
-      );
-    } else if (look.species == PetSpecies.bird) {
-      final beak = Path()
-        ..moveTo(cx + 40, cy - 18)
-        ..lineTo(cx + 68, cy - 8)
-        ..lineTo(cx + 40, cy);
-      canvas.drawPath(beak, Paint()..color = const Color(0xFFFFC857));
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(cx - 56, cy + 8), width: 36, height: 18),
-        body,
-      );
-    } else {
-      canvas.drawCircle(Offset(cx - 32, cy - 58), 16, body);
-      canvas.drawCircle(Offset(cx + 32, cy - 58), 16, body);
-    }
-
-    canvas.drawCircle(Offset(cx - 16, cy - 22), 7, white);
-    canvas.drawCircle(Offset(cx + 16, cy - 22), 7, white);
-    canvas.drawCircle(Offset(cx - 16, cy - 22), 3.5, dark);
-    canvas.drawCircle(Offset(cx + 16, cy - 22), 3.5, dark);
-    canvas.drawArc(
-      Rect.fromCenter(center: Offset(cx, cy - 6), width: 22, height: 16),
-      0.2,
-      2.7,
-      false,
-      Paint()
-        ..color = const Color(0xFF3A2F2A)
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _PetPainter oldDelegate) =>
-      oldDelegate.look.id != look.id;
 }

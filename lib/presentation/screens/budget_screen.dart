@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/icons.dart';
 import '../widgets/common.dart';
 import '../widgets/shell.dart';
 
@@ -65,13 +67,23 @@ class _BudgetScreenState extends State<BudgetScreen> {
               ),
             )
           else ...[
-            _slider('Нужное (еда и уход)', need, p.coins, (v) {
+            Row(
+              children: [
+                Expanded(child: _mini('Нужное', need, FinniIcons.need, AppTheme.peach)),
+                const SizedBox(width: 8),
+                Expanded(child: _mini('Желаемое', want, FinniIcons.want, AppTheme.sky)),
+                const SizedBox(width: 8),
+                Expanded(child: _mini('Копилка', save, FinniIcons.save, AppTheme.mint)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _slider('Нужное (еда и уход)', need, p.coins, FinniIcons.need, (v) {
               setState(() => need = v);
             }),
-            _slider('Желаемое (игрушки и вкусности)', want, p.coins, (v) {
+            _slider('Желаемое (игрушки и вкусности)', want, p.coins, FinniIcons.want, (v) {
               setState(() => want = v);
             }),
-            _slider('Копилка', save, p.coins, (v) {
+            _slider('Копилка', save, p.coins, FinniIcons.save, (v) {
               setState(() => save = v);
             }),
             Text(
@@ -84,7 +96,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            FilledButton(
+            FilledButton.icon(
               onPressed: leftover < 0
                   ? null
                   : () async {
@@ -99,9 +111,23 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       );
                       if (result.ok) setState(() {});
                     },
-              child: const Text('Подтвердить план'),
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Подтвердить план'),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _mini(String label, int value, IconData icon, Color color) {
+    return SurfaceCard(
+      child: Column(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(height: 4),
+          Text('$value', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
@@ -111,12 +137,19 @@ class _BudgetScreenState extends State<BudgetScreen> {
     String label,
     int value,
     int max,
+    IconData icon,
     ValueChanged<int> onChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label: $value'),
+        Row(
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 6),
+            Expanded(child: Text('$label: $value')),
+          ],
+        ),
         Slider(
           value: value.toDouble().clamp(0, max.toDouble()),
           max: max.toDouble().clamp(1, double.infinity),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import '../widgets/common.dart';
@@ -49,15 +50,23 @@ class _TaskPlayScreenState extends State<TaskPlayScreen> {
           const SizedBox(height: 16),
           if (task.type == TaskType.choice)
             ...task.options.map(
-              (option) => ListTile(
-                selected: optionId == option.id,
-                title: Text(option.label),
-                leading: Icon(
-                  optionId == option.id
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
+              (option) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SurfaceCard(
+                  onTap: () => setState(() => optionId = option.id),
+                  child: Row(
+                    children: [
+                      Icon(
+                        optionId == option.id
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        color: AppTheme.mint,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(option.label)),
+                    ],
+                  ),
                 ),
-                onTap: () => setState(() => optionId = option.id),
               ),
             )
           else ...[

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/content/catalog.dart';
+import 'package:finpet/presentation/widgets/icons.dart';
 
 class GlossaryScreen extends StatelessWidget {
   const GlossaryScreen({super.key});
@@ -21,15 +23,24 @@ class GlossaryScreen extends StatelessWidget {
             (item) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.$1,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    const Icon(FinniIcons.help, color: AppTheme.sky),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.$1,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(item.$2),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(item.$2),
                   ],
                 ),
               ),
