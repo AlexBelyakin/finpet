@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Finni",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "web-server",
+      "toolArgs": [
+        "-d",
+        "web-server",
+        "--web-port",
+        "8080",
+        "--web-hostname",
+        "127.0.0.1"
+      ]
+    }
+  ]
+}

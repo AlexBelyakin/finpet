@@ -1,17 +1,61 @@
-# finpet
+# Питомец Финни (FinPet)
 
-A new Flutter project.
+Игровой сервис финансовой грамотности для детей 7–11 лет. Прототип по ТЗ Департамента финансов города Москвы.
 
-## Getting Started
+Ребёнок заботится о питомце: делит монеты на **нужное**, **желаемое** и **копилку**. Настоящих денег, рекламы, аккаунтов и сервера нет. Профиль хранится только на устройстве.
 
-This project is a starting point for a Flutter application.
+## Идея и ТЗ
 
-A few resources to get you started if this is your first Flutter project:
+- Игровая валюта, не рубли из банка.
+- Гостевой локальный профиль: игровое имя, без почты и телефона.
+- План недели → факт трат → сравнение.
+- Питомец меняется от серии решений, а не от одной покупки.
+- Раздел «Взрослым» закрыт примером `8 + 5`.
+- Демо-режим: недели можно закрывать без ожидания дней.
+- Мини-игры учат «надо / хочу» и вниманию к тратам, монеты за них ограничены за неделю.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Стек
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Flutter / Dart, `shared_preferences`, Material 3. Запуск на Windows: web-server в Chrome/Simple Browser или позже Android.
+
+## Архитектура
+
+```
+lib/main.dart                 вход
+lib/app/                      тема, ассеты, адаптив, сборка приложения
+lib/domain/models.dart        сущности
+lib/domain/content/catalog.dart  магазин, цели, задания, словарь
+lib/domain/economy/engine.dart   правила плана, покупок, копилки, игр
+lib/data/storage/             сохранение профиля
+lib/presentation/             экраны, виджеты, контроллер
+assets/images/                питомцы, комната, заставка, логотип
+```
+
+UI не считает экономику сам: экраны зовут `GameController`, он зовёт `Economy` и пишет профиль на диск.
+
+## Ветки
+
+- `Alex` — работа Александра
+- `Ilya` — работа Ильи
+- `main` — общая, сюда сливают готовое
+
+Не пишите оба сразу в `main`.
+
+## Запуск
+
+В папке проекта:
+
+```powershell
+flutter pub get
+flutter run -d web-server --web-port 8080 --web-hostname 127.0.0.1
+```
+
+Открыть `http://127.0.0.1:8080` (в Cursor: Simple Browser).
+
+Остановить сервер: `q` в том терминале. Если порт занят — закрыть старый `dartvm` и запустить снова.
+
+В Cursor: F5, конфигурация **Finni**.
+
+## Что уже есть
+
+Главная с питомцем, план, магазин, копилка, задания, прогресс, взрослый шлюз, заставка, создание питомца (кот / лис / птица и цвета), игры «Надо или хочу?» и «Лови монетки».
