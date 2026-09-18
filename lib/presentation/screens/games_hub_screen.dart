@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/economy/engine.dart';
@@ -9,6 +10,7 @@ import 'package:finpet/presentation/screens/games/piggy_catch_game.dart';
 import 'package:finpet/presentation/screens/games/sort_jars_game.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
+import 'package:finpet/presentation/widgets/common.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
 class GamesHubScreen extends StatelessWidget {
@@ -34,8 +36,16 @@ class GamesHubScreen extends StatelessWidget {
               SurfaceCard(
                 child: Row(
                   children: [
-                    const Icon(FinniIcons.games, color: AppTheme.peach),
-                    const SizedBox(width: 10),
+                    ProgressRing(
+                      value: Economy.maxMinigameCoinsPerPeriod == 0
+                          ? 0
+                          : left / Economy.maxMinigameCoinsPerPeriod,
+                      color: AppTheme.peach,
+                      size: 72,
+                      stroke: 8,
+                      child: Icon(FinniIcons.games, color: AppTheme.peach, size: 28),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Сыграно: ${controller.profile.gamesPlayed}\n'
@@ -44,7 +54,10 @@ class GamesHubScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(duration: 280.ms).scale(
+                    begin: const Offset(0.96, 0.96),
+                    duration: 320.ms,
+                  ),
               const SizedBox(height: 12),
               _GameCard(
                 icon: FinniIcons.need,
@@ -138,53 +151,59 @@ class _GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: color.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(22),
-        child: InkWell(
+      child: PressScale(
+        child: Material(
+          color: color.withValues(alpha: 0.28),
           borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppTheme.card,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.45),
-                        blurRadius: 10,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [color, color.withValues(alpha: 0.7)],
                       ),
-                    ],
-                  ),
-                  child: Icon(icon, size: 28, color: AppTheme.ink),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.45),
+                          blurRadius: 10,
                         ),
-                      ),
-                      Text(subtitle),
-                    ],
+                      ],
+                    ),
+                    child: Icon(icon, size: 36, color: Colors.white),
                   ),
-                ),
-                Icon(FinniIcons.games, color: AppTheme.ink.withValues(alpha: 0.5)),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(subtitle),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: AppTheme.ink.withValues(alpha: 0.5), size: 32),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 280.ms).slideY(begin: 0.06, end: 0);
   }
 }

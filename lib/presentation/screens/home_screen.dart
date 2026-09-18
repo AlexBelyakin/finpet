@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/theme/app_theme.dart';
@@ -40,9 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body:
           'Сравним план и факт. Питомец изменится по серии решений. Это демо: ждать настоящие дни не нужно.',
     );
-    if (!ok || !context.mounted) return;
+    if (!ok || !mounted) return;
     final result = await widget.controller.closePeriod();
-    if (!context.mounted) return;
+    if (!mounted) return;
     showResult(context, message: result.message, next: result.nextStep);
   }
 
@@ -79,7 +80,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         text: pet.moodReason.isEmpty
                             ? 'Привет! Я ${pet.name}'
                             : pet.moodReason,
-                      ),
+                      )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .scaleXY(begin: 1, end: 1.03, duration: 1600.ms),
                     ),
                     FinniPetView(pet: pet, size: petSize),
                   ],
@@ -110,21 +113,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           if (p.phase == PeriodPhase.active && p.demoMode)
                             _RoundHud(
                               icon: Icons.skip_next_rounded,
-                              tooltip: 'Следующая неделя',
+                              tooltip: 'Неделя',
                               color: AppTheme.gold,
+                              size: 56,
+                              showLabel: false,
                               onTap: _closeWeek,
                             ),
                           _RoundHud(
                             icon: FinniIcons.adult,
                             tooltip: 'Взрослым',
                             color: AppTheme.wave,
+                            size: 56,
+                            showLabel: false,
                             onTap: () =>
                                 _open(AdultScreen(controller: widget.controller)),
                           ),
                           _RoundHud(
                             icon: FinniIcons.help,
-                            tooltip: 'Подсказка',
+                            tooltip: 'Словарь',
                             color: AppTheme.sky,
+                            size: 56,
+                            showLabel: false,
                             onTap: () => _open(const GlossaryScreen()),
                           ),
                         ],
@@ -207,7 +216,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: FinniIcons.games,
                             tooltip: 'Игры',
                             color: AppTheme.peach,
-                            filled: true,
                             onTap: () => _open(
                               GamesHubScreen(controller: widget.controller),
                             ),
@@ -217,7 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: FinniIcons.progress,
                             tooltip: 'Прогресс',
                             color: AppTheme.sky,
-                            filled: true,
                             onTap: () => _open(
                               ProgressScreen(controller: widget.controller),
                             ),
@@ -275,6 +282,8 @@ class _MusicHud extends StatelessWidget {
               : Icons.volume_up_rounded,
           tooltip: 'Громкость',
           color: AppTheme.ink,
+          size: 56,
+          showLabel: false,
           onTap: () => _openVolumeSheet(context),
         );
       },
@@ -361,34 +370,36 @@ class _CoinBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: AppTheme.ink.withValues(alpha: 0.82),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.ink.withValues(alpha: 0.18),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: AppTheme.gold, size: 20),
-            const SizedBox(width: 6),
-            Text(
-              '$value',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
+      child: PressScale(
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.ink.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.ink.withValues(alpha: 0.18),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppTheme.gold, size: 20),
+              const SizedBox(width: 6),
+              Text(
+                '$value',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -402,7 +413,8 @@ class _RoundHud extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.badge,
-    this.filled = false,
+    this.size = 72,
+    this.showLabel = true,
   });
 
   final IconData icon;
@@ -410,60 +422,81 @@ class _RoundHud extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   final String? badge;
-  final bool filled;
+  final double size;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
-    const size = 52.0;
-    return Tooltip(
-      message: tooltip,
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Material(
-          color: filled ? color : AppTheme.card,
-          shape: const CircleBorder(),
-          elevation: 4,
-          shadowColor: AppTheme.ink.withValues(alpha: 0.22),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: SizedBox(
-              width: size,
-              height: size,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(
-                    child: Icon(
-                      icon,
-                      color: filled ? Colors.white : color,
-                      size: 24,
-                    ),
-                  ),
-                  if (badge != null)
-                    Positioned(
-                      right: 2,
-                      top: 2,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE85D4C),
-                          shape: BoxShape.circle,
+    return PressScale(
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [color, color.withValues(alpha: 0.72)],
                         ),
-                        child: Text(
-                          badge!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: Colors.white, size: size * 0.48),
+                    ),
+                    if (badge != null)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE85D4C),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            badge!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
+                  ],
+                ),
+                if (showLabel) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    tooltip,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      shadows: [Shadow(color: Colors.white, blurRadius: 8)],
                     ),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
@@ -492,37 +525,35 @@ class _StatHud extends StatelessWidget {
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Material(
+        ProgressRing(
+          value: percent / 100,
           color: color,
-          shape: const CircleBorder(),
-          elevation: 4,
-          shadowColor: AppTheme.ink.withValues(alpha: 0.2),
-          child: SizedBox(
-            width: 52,
-            height: 52,
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
+          size: 78,
+          stroke: 8,
+          child: Icon(icon, color: color, size: 28),
         ),
         const SizedBox(height: 2),
         Text(
           '$percent%',
           style: const TextStyle(
             fontWeight: FontWeight.w800,
-            fontSize: 12,
+            fontSize: 13,
             shadows: [Shadow(color: Colors.white, blurRadius: 8)],
           ),
         ),
       ],
     );
-    return Tooltip(
-      message: tooltip,
-      child: onTap == null
-          ? body
-          : InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(28),
-              child: body,
-            ),
+    return PressScale(
+      child: Tooltip(
+        message: tooltip,
+        child: onTap == null
+            ? body
+            : InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(40),
+                child: body,
+              ),
+      ),
     );
   }
 }
@@ -535,19 +566,21 @@ class _HintChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.card.withValues(alpha: 0.92),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
+    return PressScale(
+      child: Material(
+        color: AppTheme.card.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
           ),
         ),
       ),
