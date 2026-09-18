@@ -51,11 +51,21 @@ ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 ios/Flutter/Flutter.podspec
 
-# Local TZ art and dumps at repo root
+# Local TZ art and dumps (keep out of git)
 *.pdf
 /pict/
 /tools/
+/drops/
 /sample.glb
 /track 1.mp3
 /track 2.mp3
 /fon_zagruzki.png
+/fon_zagruzki_planshet.png
+/fon_zagruzki*.png
+
+# Windows junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.orig
+.git-rewrite/
