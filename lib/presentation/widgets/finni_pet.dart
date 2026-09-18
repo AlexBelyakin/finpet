@@ -3,7 +3,6 @@ import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 class RoomBackground extends StatelessWidget {
@@ -74,73 +73,53 @@ class LivingPet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tint = AppTheme.petTint(look.color);
-    final sleepy = mood < 40;
-    final bounce = sleepy ? 4.0 : 10.0;
-    final duration = sleepy ? 1400.ms : 900.ms;
-
-    Widget body = SizedBox(
-      width: size,
-      height: size + 18,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    tint.withValues(alpha: 0.28),
-                    tint.withValues(alpha: 0.06),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: IgnorePointer(
-                  ignoring: !interactive,
-                  child: _PetModel(
-                    interactive: interactive,
-                    sleepy: sleepy,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Transform.scale(
-            scaleY: 0.38,
-            child: Container(
-              width: size * 0.72,
-              height: 22,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(40),
-                color: const Color(0xFF4A372C).withValues(alpha: 0.28),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (!_inWidgetTest) {
-      body = body
-          .animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .moveY(begin: 0, end: -bounce, duration: duration, curve: Curves.easeInOut);
-    }
 
     return GestureDetector(
       onTap: onTap,
-      child: body,
+      child: SizedBox(
+        width: size,
+        height: size + 18,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, 0.55),
+                    radius: 0.82,
+                    colors: [
+                      tint.withValues(alpha: 0.18),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: const _PetModel(),
+                ),
+              ),
+            ),
+            Transform.scale(
+              scaleY: 0.38,
+              child: Container(
+                width: size * 0.62,
+                height: 18,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(40),
+                  color: const Color(0xFF4A372C).withValues(alpha: 0.22),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _PetModel extends StatelessWidget {
-  const _PetModel({required this.interactive, required this.sleepy});
-
-  final bool interactive;
-  final bool sleepy;
+  const _PetModel();
 
   @override
   Widget build(BuildContext context) {
@@ -153,18 +132,19 @@ class _PetModel extends StatelessWidget {
       src: AppAssets.petModelSrc,
       alt: 'Питомец Финни',
       backgroundColor: const Color(0x00000000),
-      autoRotate: true,
-      autoRotateDelay: sleepy ? 1800 : 200,
-      rotationPerSecond: sleepy ? '10deg' : '32deg',
-      autoPlay: true,
-      cameraControls: interactive,
+      autoRotate: false,
+      autoPlay: false,
+      cameraControls: false,
       disableZoom: true,
       disablePan: true,
+      disableTap: true,
       shadowIntensity: 1,
-      shadowSoftness: 0.85,
+      shadowSoftness: 0.6,
       interactionPrompt: InteractionPrompt.none,
-      cameraOrbit: '25deg 72deg 105%',
-      fieldOfView: '28deg',
+      cameraOrbit: '0deg 88deg 118%',
+      minCameraOrbit: '0deg 88deg 118%',
+      maxCameraOrbit: '0deg 88deg 118%',
+      fieldOfView: '26deg',
       loading: Loading.eager,
       debugLogging: false,
       relatedCss: '''
