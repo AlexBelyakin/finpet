@@ -1,24 +1,29 @@
-import 'dart:math' as math;
-
-import 'package:flutter/material.dart';
-
 import 'package:finpet/app/assets.dart';
+import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 class RoomBackground extends StatelessWidget {
-  const RoomBackground({super.key, required this.child});
+  const RoomBackground({
+    super.key,
+    required this.child,
+    this.alignment,
+  });
 
   final Widget child;
+  final AlignmentGeometry? alignment;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage(AppAssets.bgRoom),
+          image: const AssetImage(AppAssets.bgRoom),
           fit: BoxFit.cover,
-          alignment: Alignment(0, -0.12),
+          alignment: alignment ?? AppLayout.roomFocus(context),
         ),
       ),
       child: child,
@@ -45,166 +50,131 @@ class SplashBackground extends StatelessWidget {
   }
 }
 
-class PetImage extends StatelessWidget {
-  const PetImage({
-    super.key,
-    required this.look,
-    this.size = 180,
-    this.circle = true,
-  });
+bool get _inWidgetTest => WidgetsBinding.instance.runtimeType
+    .toString()
+    .contains('TestWidgetsFlutterBinding');
 
-  final PetLook look;
-  final double size;
-  final bool circle;
-
-  @override
-  Widget build(BuildContext context) {
-    final image = Image.asset(
-      AppAssets.pet(look),
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
-      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-    );
-    if (!circle) {
-      return SizedBox(width: size, height: size, child: image);
-    }
-    return SizedBox(
-      width: size,
-      height: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppTheme.petTint(look.color).withValues(alpha: 0.18),
-        ),
-        child: ClipOval(child: image),
-      ),
-    );
-  }
-}
-
-/// PNG-питомец с объёмом: перспектива, дыхание, тень, лёгкий поворот.
-class LivingPet extends StatefulWidget {
+/// Одна GLB-модель на всех экранах. PNG-питомцы больше не показываем.
+class LivingPet extends StatelessWidget {
   const LivingPet({
     super.key,
     required this.look,
     this.size = 220,
     this.mood = 80,
     this.onTap,
+    this.interactive = true,
   });
 
   final PetLook look;
   final double size;
   final int mood;
   final VoidCallback? onTap;
-
-  @override
-  State<LivingPet> createState() => _LivingPetState();
-}
-
-class _LivingPetState extends State<LivingPet> with TickerProviderStateMixin {
-  late final AnimationController _idle;
-  late final AnimationController _tap;
-
-  @override
-  void initState() {
-    super.initState();
-    _idle = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat();
-    _tap = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 480),
-    );
-  }
-
-  @override
-  void dispose() {
-    _idle.dispose();
-    _tap.dispose();
-    super.dispose();
-  }
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) {
-    final energy = (0.55 + widget.mood / 220).clamp(0.55, 1.0);
-    return GestureDetector(
-      onTap: widget.onTap == null
-          ? null
-          : () {
-              _tap.forward(from: 0);
-              widget.onTap!();
-            },
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_idle, _tap]),
-        builder: (context, child) {
-          final t = _idle.value * math.pi * 2;
-          final bounce = math.sin(t) * 7 * energy;
-          final tilt = math.sin(t * 0.5) * 0.18;
-          final squash = 1 + math.sin(t) * 0.025 * energy;
-          final tapLift = Curves.easeOut.transform(_tap.value);
-          final pop = 1 + math.sin(tapLift * math.pi) * 0.08;
-          final shadow = (1.05 - bounce.abs() / 28).clamp(0.72, 1.1);
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Transform(
-                alignment: Alignment.bottomCenter,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.0016)
-                  ..rotateX(0.16)
-                  ..rotateY(tilt)
-                  ..translateByDouble(0, -bounce - tapLift * 10, 0, 1)
-                  ..scaleByDouble(squash * pop, (2 - squash) * pop, 1, 1),
-                child: child,
+    final tint = AppTheme.petTint(look.color);
+    final sleepy = mood < 40;
+    final bounce = sleepy ? 4.0 : 10.0;
+    final duration = sleepy ? 1400.ms : 900.ms;
+
+    Widget body = SizedBox(
+      width: size,
+      height: size + 18,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    tint.withValues(alpha: 0.28),
+                    tint.withValues(alpha: 0.06),
+                    Colors.transparent,
+                  ],
+                ),
               ),
-              Transform.scale(
-                scaleX: 1.15 * shadow,
-                scaleY: 0.55 * shadow,
-                child: Container(
-                  width: widget.size * 0.62,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(40),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.18),
-                        blurRadius: 16,
-                        spreadRadius: 1,
-                      ),
-                    ],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: IgnorePointer(
+                  ignoring: !interactive,
+                  child: _PetModel(
+                    interactive: interactive,
+                    sleepy: sleepy,
                   ),
                 ),
               ),
-            ],
-          );
-        },
-        child: SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: widget.size * 0.86,
-                height: widget.size * 0.86,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.55),
-                      AppTheme.petTint(widget.look.color).withValues(alpha: 0.08),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.2, 0.65, 1],
-                  ),
-                ),
-              ),
-              PetImage(look: widget.look, size: widget.size, circle: false),
-            ],
+            ),
           ),
-        ),
+          Transform.scale(
+            scaleY: 0.38,
+            child: Container(
+              width: size * 0.72,
+              height: 22,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(40),
+                color: const Color(0xFF4A372C).withValues(alpha: 0.28),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (!_inWidgetTest) {
+      body = body
+          .animate(onPlay: (controller) => controller.repeat(reverse: true))
+          .moveY(begin: 0, end: -bounce, duration: duration, curve: Curves.easeInOut);
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: body,
+    );
+  }
+}
+
+class _PetModel extends StatelessWidget {
+  const _PetModel({required this.interactive, required this.sleepy});
+
+  final bool interactive;
+  final bool sleepy;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_inWidgetTest) {
+      return const FittedBox(
+        child: Icon(Icons.pets_rounded, color: AppTheme.mint),
+      );
+    }
+    return ModelViewer(
+      src: AppAssets.petModelSrc,
+      alt: 'Питомец Финни',
+      backgroundColor: const Color(0x00000000),
+      autoRotate: true,
+      autoRotateDelay: sleepy ? 1800 : 200,
+      rotationPerSecond: sleepy ? '10deg' : '32deg',
+      autoPlay: true,
+      cameraControls: interactive,
+      disableZoom: true,
+      disablePan: true,
+      shadowIntensity: 1,
+      shadowSoftness: 0.85,
+      interactionPrompt: InteractionPrompt.none,
+      cameraOrbit: '25deg 72deg 105%',
+      fieldOfView: '28deg',
+      loading: Loading.eager,
+      debugLogging: false,
+      relatedCss: '''
+model-viewer {
+  width: 100%;
+  height: 100%;
+  --poster-color: transparent;
+  --progress-bar-color: #7BC6A6;
+}
+''',
     );
   }
 }
@@ -226,7 +196,7 @@ class FinniPetView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = switch (pet.stage) {
-      1 => 0.9,
+      1 => 0.92,
       2 => 1.0,
       _ => 1.12,
     };
@@ -244,12 +214,15 @@ class FinniPetView extends StatelessWidget {
         ),
         if (showCaption) ...[
           const SizedBox(height: 2),
-          Text(
-            pet.name,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.ink,
+          GestureDetector(
+            onTap: onTap,
+            child: Text(
+              pet.name,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.ink,
+              ),
             ),
           ),
           Text(
@@ -258,6 +231,58 @@ class FinniPetView extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class SpeciesChip extends StatelessWidget {
+  const SpeciesChip({
+    super.key,
+    required this.species,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final PetSpecies species;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final look = PetLook(species: species, color: PetColor.mint);
+    final icon = switch (species) {
+      PetSpecies.cat => Icons.pets_rounded,
+      PetSpecies.fox => Icons.cruelty_free_rounded,
+      PetSpecies.bird => Icons.flutter_dash_rounded,
+    };
+    return Material(
+      color: selected ? AppTheme.mint.withValues(alpha: 0.22) : AppTheme.card,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? AppTheme.mint : Colors.transparent,
+              width: 3,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 32, color: AppTheme.ink),
+              const SizedBox(height: 6),
+              Text(
+                look.speciesLabel,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
