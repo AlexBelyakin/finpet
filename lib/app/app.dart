@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
+import 'package:finpet/data/audio/music_service.dart';
 import 'package:finpet/presentation/screens/create_pet_screen.dart';
 import 'package:finpet/presentation/screens/home_screen.dart';
 import 'package:finpet/presentation/screens/onboarding_screen.dart';
@@ -34,12 +35,25 @@ class _SplashGate extends StatefulWidget {
 
 class _SplashGateState extends State<_SplashGate> {
   bool _minTimeDone = false;
+  bool? _musicOn;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MusicService.instance.loadPrefs();
+      widget.controller.load();
+    });
     Future<void>.delayed(const Duration(milliseconds: 1600), () {
       if (mounted) setState(() => _minTimeDone = true);
+    });
+  }
+
+  void _syncMusic(bool inGame) {
+    if (_musicOn == inGame) return;
+    _musicOn = inGame;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MusicService.instance.setInGame(inGame);
     });
   }
 
@@ -49,15 +63,19 @@ class _SplashGateState extends State<_SplashGate> {
       listenable: widget.controller,
       builder: (context, _) {
         if (!widget.controller.loaded || !_minTimeDone) {
+          _syncMusic(false);
           return const SplashView();
         }
         final p = widget.controller.profile;
         if (!p.seenIntro) {
+          _syncMusic(false);
           return OnboardingScreen(controller: widget.controller);
         }
         if (p.pet == null) {
+          _syncMusic(false);
           return CreatePetScreen(controller: widget.controller);
         }
+        _syncMusic(true);
         return HomeScreen(controller: widget.controller);
       },
     );
