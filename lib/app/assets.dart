@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 abstract final class AppAssets {
   static const logo = 'assets/images/logo_finni.png';
   static const bgLaunch = 'assets/images/fon_zagruzki.png';
+  static const bgLaunchTablet = 'assets/images/fon_zagruzki_planshet.png';
   static const bgSplash = 'assets/images/bg_splash.png';
   static const bgRoom = 'assets/images/bg_room.png';
   static const petModel = 'assets/models/finni.glb';
