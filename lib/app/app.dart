@@ -44,7 +44,7 @@ class _SplashGateState extends State<_SplashGate> {
       MusicService.instance.loadPrefs();
       widget.controller.load();
     });
-    Future<void>.delayed(const Duration(milliseconds: 1600), () {
+    Future<void>.delayed(const Duration(milliseconds: 2200), () {
       if (mounted) setState(() => _minTimeDone = true);
     });
   }
