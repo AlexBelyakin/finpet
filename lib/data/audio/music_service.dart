@@ -18,14 +18,14 @@ class MusicService extends ChangeNotifier {
 
   AudioPlayer? _player;
   bool muted = false;
-  double volume = 0.8;
+  double volume = 1.0;
   bool _inGame = false;
   int _index = 0;
 
   Future<void> loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     muted = prefs.getBool(_mutedKey) ?? false;
-    volume = (prefs.getDouble(_volumeKey) ?? 0.8).clamp(0.0, 1.0);
+    volume = (prefs.getDouble(_volumeKey) ?? 1.0).clamp(0.0, 1.0);
     notifyListeners();
   }
 
@@ -50,11 +50,22 @@ class MusicService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> nudgeVolume(double delta) async {
-    if (delta > 0 && muted) {
-      await toggleMuted();
+  Future<void> nudgeVolume(double delta) => setVolume(volume + delta);
+
+  Future<void> setVolume(double value) async {
+    volume = value.clamp(0.0, 1.0);
+    if (volume > 0 && muted) {
+      muted = false;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_mutedKey, false);
+      if (_inGame) await _ensurePlaying();
     }
-    volume = (volume + delta).clamp(0.0, 1.0);
+    if (volume == 0 && !muted) {
+      muted = true;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_mutedKey, true);
+      await _player?.pause();
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_volumeKey, volume);
     await _player?.setVolume(volume);
