@@ -236,12 +236,11 @@ PDF ТЗ в git не лежит.
 
 ## Что сейчас в Alex и в main
 
-После этой пачки (фон планшета, папка `drops/`, gitignore, скиллы git):
+После этой пачки (фон планшета, папка `drops/`, gitignore):
 
 - Фон загрузки: телефон `assets/images/fon_zagruzki.png`, планшет `assets/images/fon_zagruzki_planshet.png` и native `drawable-sw600dp-nodpi`
 - Сырьё из корня (png, pdf, glb, mp3, `pict/`, `tools/`) лежит в **`drops/`**, в git не входит
 - В gitignore: `drops/`, Thumbs.db, `*.orig`, `.git-rewrite/`
-- Скиллы в `.cursor/skills/`: один автор без Cursor; пуш сначала в Alex
 
 Относительно прошлого web-прототипа:
 

@@ -63,7 +63,8 @@ ios/Flutter/Flutter.podspec
 /fon_zagruzki_planshet.png
 /fon_zagruzki*.png
 
-# Windows junk
+# Local agent files
+.cursor/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
