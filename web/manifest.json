@@ -1,6 +1,6 @@
 {
     "name": "Питомец Финни",
-    "short_name": "Финни",
+    "short_name": "Питомец Финни",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
