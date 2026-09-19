@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:finpet/app/assets.dart';
+import 'package:finpet/app/layout.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/screens/glossary_screen.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
@@ -36,6 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final page = _pages[_index];
+    final pet = AppLayout.petSize(context, phone: 168, tablet: 240);
     return Scaffold(
       body: SplashBackground(
         child: SafeArea(
@@ -57,37 +59,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 const Spacer(),
-                if (_index == 0)
-                  Image.asset(AppAssets.logo, height: 148)
-                else if (_index == 1)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      LivingPet(
-                        look: const PetLook(
-                          species: PetSpecies.cat,
-                          color: PetColor.peach,
-                        ),
-                        size: 92,
-                      ),
-                      LivingPet(
-                        look: const PetLook(
-                          species: PetSpecies.fox,
-                          color: PetColor.mint,
-                        ),
-                        size: 104,
-                      ),
-                      LivingPet(
-                        look: const PetLook(
-                          species: PetSpecies.bird,
-                          color: PetColor.sky,
-                        ),
-                        size: 92,
-                      ),
-                    ],
-                  )
-                else
-                  Image.asset(AppAssets.logo, height: 132),
+                LivingPet(
+                  look: const PetLook(
+                    species: PetSpecies.cat,
+                    color: PetColor.mint,
+                  ),
+                  size: pet,
+                  interactive: false,
+                ),
                 const SizedBox(height: 20),
                 SurfaceCard(
                   child: Column(
@@ -105,7 +84,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
-                ),
+                ).animate(key: ValueKey(_index)).fadeIn(duration: 280.ms),
                 const Spacer(),
                 SizedBox(
                   width: double.infinity,

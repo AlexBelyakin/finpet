@@ -27,4 +27,14 @@ abstract final class AppLayout {
   }
 
   static double iconBox(BuildContext context) => isTablet(context) ? 56 : 48;
+
+  /// Нижняя часть комнаты (пол), чтобы питомец не висел на стене.
+  static Alignment roomFocus(BuildContext context) {
+    if (isWide(context)) return const Alignment(0, 0.38);
+    if (isTablet(context)) return const Alignment(0, 0.52);
+    return const Alignment(0, 0.66);
+  }
+
+  static double petFloorPad(BuildContext context) =>
+      isWide(context) ? 28 : (isTablet(context) ? 16 : 8);
 }

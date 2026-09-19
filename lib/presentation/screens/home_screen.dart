@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/theme/app_theme.dart';
+import 'package:finpet/data/audio/music_service.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/domain/economy/engine.dart';
 import 'package:finpet/domain/models.dart';
@@ -9,7 +11,6 @@ import 'package:finpet/presentation/state/game_controller.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 import '../widgets/common.dart';
 import '../widgets/finni_pet.dart';
-import '../widgets/shell.dart';
 import 'adult_screen.dart';
 import 'budget_screen.dart';
 import 'games_hub_screen.dart';
@@ -29,25 +30,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _bubble;
-  int _line = 0;
-
   void _open(Widget page) {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
   }
 
-  void _onPetTap(Pet pet) {
-    final lines = <String>[
-      if (pet.satiety < 40) 'Кажется, пора подумать про корм.',
-      if (pet.mood < 40) 'Мне грустновато. Может, поиграем после нужных дел?',
-      if (pet.mood >= 70) 'Мне хорошо! Спасибо, что заботишься.',
-      'Давай сверим план: нужное, желаемое, копилка.',
-      'Копилка тоже важна — цель ближе по чуть-чуть.',
-    ];
-    setState(() {
-      _line = (_line + 1) % lines.length;
-      _bubble = lines[_line];
-    });
+  Future<void> _closeWeek() async {
+    final ok = await confirmAction(
+      context,
+      title: 'Закрыть неделю?',
+      body:
+          'Сравним план и факт. Питомец изменится по серии решений. Это демо: ждать настоящие дни не нужно.',
+    );
+    if (!ok || !mounted) return;
+    final result = await widget.controller.closePeriod();
+    if (!mounted) return;
+    showResult(context, message: result.message, next: result.nextStep);
   }
 
   @override
@@ -57,292 +54,536 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, _) {
         final p = widget.controller.profile;
         final pet = p.pet!;
-        final wide = AppLayout.isWide(context);
-        final petSize = AppLayout.petSize(context);
-        final petBlock = Column(
-          children: [
-            if (_bubble != null) SpeechBubble(text: _bubble!),
-            FinniPetView(
-              pet: pet,
-              size: petSize,
-              onTap: () => _onPetTap(pet),
-            ),
-            Text(
-              'Нажми на питомца — он откликнется',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.ink.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-        );
-        final panel = _HomePanel(
-          controller: widget.controller,
-          onOpen: _open,
-        );
+        final goal = Catalog.goalById(p.goalId);
+        final openTask = Catalog.tasks
+            .where((task) => !p.doneTaskIds.contains(task.id))
+            .firstOrNull;
+        final goalPercent = goal == null
+            ? 0
+            : ((p.savings / goal.cost) * 100).clamp(0, 100).round();
+        final petSize = AppLayout.petSize(context, phone: 300, tablet: 420);
+
         return Scaffold(
-          body: RoomBackground(
-            child: SafeArea(
-              child: wide
-                  ? Row(
-                      children: [
-                        Expanded(
-                          flex: 5,
-                          child: _headerAndPet(context, p, petBlock),
-                        ),
-                        Expanded(
-                          flex: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 8, 12, 12),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: AppTheme.card.withValues(alpha: 0.96),
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: panel,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        Expanded(child: _headerAndPet(context, p, petBlock)),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.sizeOf(context).height * 0.46,
-                          ),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: AppTheme.card.withValues(alpha: 0.96),
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(28),
-                              ),
-                            ),
-                            child: panel,
-                          ),
-                        ),
-                      ],
+          backgroundColor: AppTheme.cream,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              const RoomBackground(child: SizedBox.expand()),
+              Align(
+                alignment: const Alignment(0, 0.38),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 72),
+                      child: SpeechBubble(
+                        text: pet.moodReason.isEmpty
+                            ? 'Привет! Я ${pet.name}'
+                            : pet.moodReason,
+                      )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .scaleXY(begin: 1, end: 1.03, duration: 1600.ms),
                     ),
-            ),
+                    FinniPetView(pet: pet, size: petSize),
+                  ],
+                ),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _CoinBadge(
+                            icon: FinniIcons.coins,
+                            value: p.coins,
+                            tooltip: 'Монеты',
+                          ),
+                          const SizedBox(width: 8),
+                          _CoinBadge(
+                            icon: FinniIcons.savings,
+                            value: p.savings,
+                            tooltip: 'Копилка',
+                          ),
+                          const SizedBox(width: 8),
+                          _MusicHud(),
+                          const Spacer(),
+                          if (p.phase == PeriodPhase.active && p.demoMode)
+                            _RoundHud(
+                              icon: Icons.skip_next_rounded,
+                              tooltip: 'Неделя',
+                              color: AppTheme.gold,
+                              size: 56,
+                              showLabel: false,
+                              onTap: _closeWeek,
+                            ),
+                          _RoundHud(
+                            icon: FinniIcons.adult,
+                            tooltip: 'Взрослым',
+                            color: AppTheme.wave,
+                            size: 56,
+                            showLabel: false,
+                            onTap: () =>
+                                _open(AdultScreen(controller: widget.controller)),
+                          ),
+                          _RoundHud(
+                            icon: FinniIcons.help,
+                            tooltip: 'Словарь',
+                            color: AppTheme.sky,
+                            size: 56,
+                            showLabel: false,
+                            onTap: () => _open(const GlossaryScreen()),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (openTask != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _HintChip(
+                            text: 'Задание: ${openTask.title}',
+                            onTap: () => _open(
+                              TasksScreen(controller: widget.controller),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _RoundHud(
+                                  icon: FinniIcons.plan,
+                                  tooltip: 'План',
+                                  color: AppTheme.mint,
+                                  onTap: () => _open(
+                                    BudgetScreen(controller: widget.controller),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                _RoundHud(
+                                  icon: FinniIcons.tasks,
+                                  tooltip: 'Задания',
+                                  color: AppTheme.sky,
+                                  badge: openTask == null ? null : '!',
+                                  onTap: () => _open(
+                                    TasksScreen(controller: widget.controller),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _RoundHud(
+                                  icon: FinniIcons.shop,
+                                  tooltip: 'Покупки',
+                                  color: AppTheme.peach,
+                                  onTap: () => _open(
+                                    ShopScreen(controller: widget.controller),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                _RoundHud(
+                                  icon: FinniIcons.savings,
+                                  tooltip: 'Копилка',
+                                  color: AppTheme.gold,
+                                  onTap: () => _open(
+                                    SavingsScreen(controller: widget.controller),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+                      child: Row(
+                        children: [
+                          _RoundHud(
+                            icon: FinniIcons.games,
+                            tooltip: 'Игры',
+                            color: AppTheme.peach,
+                            onTap: () => _open(
+                              GamesHubScreen(controller: widget.controller),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _RoundHud(
+                            icon: FinniIcons.progress,
+                            tooltip: 'Прогресс',
+                            color: AppTheme.sky,
+                            onTap: () => _open(
+                              ProgressScreen(controller: widget.controller),
+                            ),
+                          ),
+                          const Spacer(),
+                          _StatHud(
+                            icon: Icons.favorite_rounded,
+                            percent: pet.mood,
+                            tooltip: 'Настроение ${pet.mood}',
+                            color: AppTheme.mint,
+                          ),
+                          const SizedBox(width: 8),
+                          _StatHud(
+                            icon: Icons.restaurant_rounded,
+                            percent: pet.satiety,
+                            tooltip: 'Сытость ${pet.satiety}',
+                            color: AppTheme.peach,
+                          ),
+                          const SizedBox(width: 8),
+                          _StatHud(
+                            icon: FinniIcons.savings,
+                            percent: goalPercent,
+                            tooltip: goal == null
+                                ? 'Цель не выбрана'
+                                : '${goal.title}: ${p.savings} из ${goal.cost}. ${Economy.goalEta(p)}',
+                            color: AppTheme.gold,
+                            onTap: () => _open(
+                              SavingsScreen(controller: widget.controller),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
+}
 
-  Widget _headerAndPet(BuildContext context, GameProfile p, Widget petBlock) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  p.playerName.isEmpty
-                      ? 'Неделя ${p.periodIndex}'
-                      : 'Привет, ${p.playerName}!',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Подсказка',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const GlossaryScreen(),
+class _MusicHud extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: MusicService.instance,
+      builder: (context, _) {
+        final music = MusicService.instance;
+        return _RoundHud(
+          icon: music.muted
+              ? Icons.volume_off_rounded
+              : Icons.volume_up_rounded,
+          tooltip: 'Громкость',
+          color: AppTheme.ink,
+          size: 56,
+          showLabel: false,
+          onTap: () => _openVolumeSheet(context),
+        );
+      },
+    );
+  }
+
+  void _openVolumeSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppTheme.card,
+      builder: (context) {
+        return ListenableBuilder(
+          listenable: MusicService.instance,
+          builder: (context, _) {
+            final music = MusicService.instance;
+            final percent = music.muted ? 0 : (music.volume * 100).round();
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    music.muted ? 'Музыка выключена' : 'Громкость $percent%',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Тише',
+                        onPressed: () =>
+                            music.nudgeVolume(-MusicService.volumeStep),
+                        icon: const Icon(Icons.volume_down_rounded),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: music.muted ? 0 : music.volume,
+                          onChanged: music.setVolume,
+                          min: 0,
+                          max: 1,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Громче',
+                        onPressed: () =>
+                            music.nudgeVolume(MusicService.volumeStep),
+                        icon: const Icon(Icons.volume_up_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  FilledButton.icon(
+                    onPressed: music.toggleMuted,
+                    icon: Icon(
+                      music.muted
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
                     ),
-                  );
-                },
-                icon: const Icon(FinniIcons.help),
+                    label: Text(music.muted ? 'Включить' : 'Тихо'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: CoinChip(label: 'Монеты', value: p.coins),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: CoinChip(
-                  label: 'Копилка',
-                  value: p.savings,
-                  icon: FinniIcons.savings,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Align(
-            alignment: const Alignment(0, 0.35),
-            child: SingleChildScrollView(child: petBlock),
-          ),
-        ),
-      ],
+            );
+          },
+        );
+      },
     );
   }
 }
 
-class _HomePanel extends StatelessWidget {
-  const _HomePanel({required this.controller, required this.onOpen});
+class _CoinBadge extends StatelessWidget {
+  const _CoinBadge({
+    required this.icon,
+    required this.value,
+    required this.tooltip,
+  });
 
-  final GameController controller;
-  final void Function(Widget page) onOpen;
+  final IconData icon;
+  final int value;
+  final String tooltip;
 
   @override
   Widget build(BuildContext context) {
-    final p = controller.profile;
-    final pet = p.pet!;
-    final goal = Catalog.goalById(p.goalId);
-    final openTask = Catalog.tasks
-        .where((task) => !p.doneTaskIds.contains(task.id))
-        .firstOrNull;
-    final cols = AppLayout.columns(context, phone: 3, tablet: 3);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: [
-        Text(
-          'Неделя ${p.periodIndex} · ${_phaseLabel(p.phase)}',
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        StatBar(
-          label: 'Сытость',
-          value: pet.satiety,
-          color: AppTheme.peach,
-          icon: Icons.restaurant_rounded,
-        ),
-        const SizedBox(height: 10),
-        StatBar(
-          label: 'Настроение',
-          value: pet.mood,
-          color: AppTheme.mint,
-          icon: Icons.favorite_rounded,
-        ),
-        const SizedBox(height: 8),
-        Text(pet.moodReason),
-        const SizedBox(height: 10),
-        SurfaceCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                goal == null ? 'Цель не выбрана' : '${goal.emoji} ${goal.title}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
+    return Tooltip(
+      message: tooltip,
+      child: PressScale(
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.ink.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.ink.withValues(alpha: 0.18),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-              const SizedBox(height: 6),
-              if (goal != null)
-                LinearProgressIndicator(
-                  minHeight: 10,
-                  value: (p.savings / goal.cost).clamp(0, 1),
-                  color: AppTheme.sky,
-                  backgroundColor: AppTheme.sky.withValues(alpha: 0.2),
-                ),
-              const SizedBox(height: 6),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppTheme.gold, size: 20),
+              const SizedBox(width: 6),
               Text(
-                goal == null
-                    ? 'Выбери цель в копилке.'
-                    : 'Накоплено ${p.savings} из ${goal.cost}. ${Economy.goalEta(p)}',
+                '$value',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          openTask == null
-              ? 'Все задания пройдены. Новые уже в списке на следующей неделе контента.'
-              : 'Задание: ${openTask.title}',
-        ),
-        const SizedBox(height: 10),
-        FeedbackBanner(message: p.lastMessage, nextStep: p.lastNextStep),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: cols,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: AppLayout.isTablet(context) ? 1.25 : 1.05,
-          children: [
-            AppNavTile(
-              icon: FinniIcons.games,
-              label: 'Игры',
-              color: AppTheme.peach,
-              onTap: () => onOpen(GamesHubScreen(controller: controller)),
-            ),
-            AppNavTile(
-              icon: FinniIcons.plan,
-              label: 'План',
-              color: AppTheme.mint,
-              onTap: () => onOpen(BudgetScreen(controller: controller)),
-            ),
-            AppNavTile(
-              icon: FinniIcons.tasks,
-              label: 'Задания',
-              color: AppTheme.sky,
-              onTap: () => onOpen(TasksScreen(controller: controller)),
-            ),
-            AppNavTile(
-              icon: FinniIcons.shop,
-              label: 'Покупки',
-              color: AppTheme.peach,
-              onTap: () => onOpen(ShopScreen(controller: controller)),
-            ),
-            AppNavTile(
-              icon: FinniIcons.savings,
-              label: 'Копилка',
-              color: AppTheme.peach,
-              onTap: () => onOpen(SavingsScreen(controller: controller)),
-            ),
-            AppNavTile(
-              icon: FinniIcons.progress,
-              label: 'Прогресс',
-              color: AppTheme.sky,
-              onTap: () => onOpen(ProgressScreen(controller: controller)),
-            ),
-            AppNavTile(
-              icon: FinniIcons.adult,
-              label: 'Взрослым',
-              color: AppTheme.wave,
-              onTap: () => onOpen(AdultScreen(controller: controller)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (p.phase == PeriodPhase.active && p.demoMode)
-          FilledButton.icon(
-            onPressed: () async {
-              final ok = await confirmAction(
-                context,
-                title: 'Закрыть неделю?',
-                body:
-                    'Сравним план и факт. Питомец изменится по серии решений. Это демо: ждать настоящие дни не нужно.',
-              );
-              if (!ok || !context.mounted) return;
-              final result = await controller.closePeriod();
-              if (!context.mounted) return;
-              showResult(
-                context,
-                message: result.message,
-                next: result.nextStep,
-              );
-            },
-            icon: const Icon(Icons.skip_next_rounded),
-            label: const Text('Следующая неделя'),
-          ),
-      ],
+      ),
     );
   }
+}
 
-  String _phaseLabel(PeriodPhase phase) => switch (phase) {
-        PeriodPhase.planning => 'составляем план',
-        PeriodPhase.active => 'неделя идёт',
-        PeriodPhase.review => 'смотрим итог',
-      };
+class _RoundHud extends StatelessWidget {
+  const _RoundHud({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.onTap,
+    this.badge,
+    this.size = 72,
+    this.showLabel = true,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onTap;
+  final String? badge;
+  final double size;
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [color, color.withValues(alpha: 0.72)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: Colors.white, size: size * 0.48),
+                    ),
+                    if (badge != null)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE85D4C),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            badge!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (showLabel) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    tooltip,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      shadows: [Shadow(color: Colors.white, blurRadius: 8)],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatHud extends StatelessWidget {
+  const _StatHud({
+    required this.icon,
+    required this.percent,
+    required this.tooltip,
+    required this.color,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final int percent;
+  final String tooltip;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ProgressRing(
+          value: percent / 100,
+          color: color,
+          size: 78,
+          stroke: 8,
+          child: Icon(icon, color: color, size: 28),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '$percent%',
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+            shadows: [Shadow(color: Colors.white, blurRadius: 8)],
+          ),
+        ),
+      ],
+    );
+    return PressScale(
+      child: Tooltip(
+        message: tooltip,
+        child: onTap == null
+            ? body
+            : InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(40),
+                child: body,
+              ),
+      ),
+    );
+  }
+}
+
+class _HintChip extends StatelessWidget {
+  const _HintChip({required this.text, required this.onTap});
+
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      child: Material(
+        color: AppTheme.card.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:finpet/domain/models.dart';
 
 abstract final class AppTheme {
-  static const cream = Color(0xFFFFF6EA);
-  static const mint = Color(0xFF7BC6A6);
-  static const peach = Color(0xFFFFB38A);
-  static const sky = Color(0xFF8EC5E8);
-  static const wave = Color(0xFFE7C9B8);
+  static const cream = Color(0xFFFFF3DC);
+  static const mint = Color(0xFF6FCBAB);
+  static const peach = Color(0xFFFFA978);
+  static const sky = Color(0xFF7EC4F0);
+  static const wave = Color(0xFFE8B9A4);
+  static const lilac = Color(0xFFD7C4F5);
+  static const gold = Color(0xFFE8B84A);
   static const ink = Color(0xFF3A2F2A);
-  static const card = Color(0xFFFFFCF7);
+  static const card = Color(0xFFFFFDF8);
 
   static Color petTint(PetColor color) => switch (color) {
         PetColor.peach => peach,

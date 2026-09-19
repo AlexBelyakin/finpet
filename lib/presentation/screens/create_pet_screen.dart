@@ -96,36 +96,15 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
+                        child: SpeciesChip(
+                          species: species,
+                          selected: _look.species == species,
                           onTap: () => setState(() {
                             _look = PetLook(
                               species: species,
                               color: _look.color,
                             );
                           }),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: AppTheme.card,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: _look.species == species
-                                    ? AppTheme.mint
-                                    : Colors.transparent,
-                                width: 3,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: PetImage(
-                                look: PetLook(
-                                  species: species,
-                                  color: _look.color,
-                                ),
-                                size: 72,
-                              ),
-                            ),
-                          ),
                         ),
                       ),
                     ),

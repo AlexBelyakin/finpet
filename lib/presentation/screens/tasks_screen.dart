@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/content/catalog.dart';
@@ -27,7 +28,7 @@ class _TasksScreenState extends State<TasksScreen> {
       builder: (context, _) {
         final tasks = Catalog.tasks.where((task) {
           return _filter == null || task.theme == _filter;
-        });
+        }).toList();
         return FinniScaffold(
           title: 'Задания',
           body: ListView(
@@ -54,9 +55,15 @@ class _TasksScreenState extends State<TasksScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              ...tasks.map((task) {
+              ...tasks.asMap().entries.map((entry) {
+                final task = entry.value;
                 final done =
                     widget.controller.profile.doneTaskIds.contains(task.id);
+                final color = switch (task.theme) {
+                  TaskTheme.budget => AppTheme.mint,
+                  TaskTheme.savings => AppTheme.gold,
+                  TaskTheme.purchases => AppTheme.peach,
+                };
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: SurfaceCard(
@@ -74,11 +81,21 @@ class _TasksScreenState extends State<TasksScreen> {
                           },
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          backgroundColor: AppTheme.sky.withValues(alpha: 0.25),
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [color, color.withValues(alpha: 0.7)],
+                            ),
+                          ),
                           child: Icon(
                             FinniIcons.forTask(task.theme),
-                            color: AppTheme.ink,
+                            color: Colors.white,
+                            size: 28,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -97,11 +114,18 @@ class _TasksScreenState extends State<TasksScreen> {
                             ],
                           ),
                         ),
-                        Icon(done ? Icons.check_circle : Icons.chevron_right),
+                        Icon(
+                          done ? Icons.check_circle : Icons.chevron_right,
+                          color: done ? AppTheme.mint : AppTheme.ink.withValues(alpha: 0.45),
+                          size: 28,
+                        ),
                       ],
                     ),
                   ),
-                );
+                )
+                    .animate()
+                    .fadeIn(duration: 280.ms, delay: (40 * entry.key).ms)
+                    .slideX(begin: 0.05);
               }),
             ],
           ),

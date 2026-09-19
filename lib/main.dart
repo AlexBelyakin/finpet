@@ -6,7 +6,5 @@ import 'package:finpet/presentation/state/game_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final controller = GameController(ProfileStore());
-  await controller.load();
-  runApp(FinniApp(controller: controller));
+  runApp(FinniApp(controller: GameController(ProfileStore())));
 }

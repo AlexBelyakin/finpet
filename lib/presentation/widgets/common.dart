@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
@@ -34,14 +36,21 @@ class StatBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: LinearProgressIndicator(
-            minHeight: 12,
-            value: value / 100,
-            color: color,
-            backgroundColor: color.withValues(alpha: 0.18),
-          ),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: value / 100),
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+          builder: (context, animated, _) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                minHeight: 12,
+                value: animated,
+                color: color,
+                backgroundColor: color.withValues(alpha: 0.18),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -120,21 +129,41 @@ class AppNavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.card,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
+    return PressScale(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: Padding(
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.18),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: color.withValues(alpha: 0.22),
-                child: Icon(icon, color: AppTheme.ink),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color, color.withValues(alpha: 0.7)],
+                  ),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
               ),
               const SizedBox(height: 8),
               Text(
@@ -144,6 +173,7 @@ class AppNavTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -269,4 +299,116 @@ void showResult(BuildContext context, {required String message, required String 
       );
     },
   );
+}
+
+class PressScale extends StatefulWidget {
+  const PressScale({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _down = false;
+
+  void _set(bool value) {
+    if (_down == value) return;
+    setState(() => _down = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _set(true),
+      onPointerUp: (_) => _set(false),
+      onPointerCancel: (_) => _set(false),
+      child: AnimatedScale(
+        scale: _down ? 0.95 : 1,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class ProgressRing extends StatelessWidget {
+  const ProgressRing({
+    super.key,
+    required this.value,
+    required this.color,
+    this.size = 168,
+    this.stroke = 14,
+    this.child,
+  });
+
+  final double value;
+  final Color color;
+  final double size;
+  final double stroke;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, animated, _) {
+        return SizedBox(
+          width: size,
+          height: size,
+          child: CustomPaint(
+            painter: _RingPainter(
+              progress: animated,
+              color: color,
+              stroke: stroke,
+            ),
+            child: Center(child: child),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.stroke,
+  });
+
+  final double progress;
+  final Color color;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - stroke) / 2;
+    final bg = Paint()
+      ..color = color.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    final fg = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = stroke;
+    canvas.drawCircle(center, radius, bg);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      2 * math.pi * progress,
+      false,
+      fg,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
 }

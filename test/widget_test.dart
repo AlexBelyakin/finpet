@@ -13,8 +13,7 @@ void main() {
     await controller.load();
     await tester.pumpWidget(FinniApp(controller: controller));
     await tester.pump();
-    expect(find.text('Питомец Финни'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 1700));
+    await tester.pump(const Duration(milliseconds: 2300));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('про монеты'), findsOneWidget);
   });
