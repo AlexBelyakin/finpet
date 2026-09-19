@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:finpet/app/assets.dart';
 import 'package:finpet/app/theme/app_theme.dart';
+import 'package:finpet/data/pet/pet_model_runtime.dart';
 import 'package:finpet/data/audio/music_service.dart';
 import 'package:finpet/presentation/screens/create_pet_screen.dart';
 import 'package:finpet/presentation/screens/home_screen.dart';
@@ -43,8 +45,9 @@ class _SplashGateState extends State<_SplashGate> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MusicService.instance.loadPrefs();
       widget.controller.load();
+      PetModelRuntime.instance.start();
     });
-    Future<void>.delayed(const Duration(milliseconds: 2200), () {
+    Future<void>.delayed(AppSplash.hold, () {
       if (mounted) setState(() => _minTimeDone = true);
     });
   }

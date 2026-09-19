@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:finpet/app/layout.dart';
+import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/data/audio/music_service.dart';
 import 'package:finpet/domain/content/catalog.dart';
@@ -10,7 +12,7 @@ import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 import '../widgets/common.dart';
-import '../widgets/finni_pet.dart';
+import '../widgets/pet/finni_pet.dart';
 import 'adult_screen.dart';
 import 'budget_screen.dart';
 import 'games_hub_screen.dart';
@@ -30,8 +32,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  void _open(Widget page) {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+  Future<void> _open(Widget page) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => page),
+    );
+    if (mounted) widget.controller.presentQueuedClip();
   }
 
   Future<void> _closeWeek() async {
@@ -45,6 +50,48 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await widget.controller.closePeriod();
     if (!mounted) return;
     showResult(context, message: result.message, next: result.nextStep);
+  }
+
+  Future<void> _openSessionMenu(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppTheme.card,
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.pets_rounded, color: AppTheme.mint),
+                title: const Text('Новый питомец'),
+                subtitle: const Text('Откроется создание персонажа'),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  final ok = await confirmAction(
+                    context,
+                    title: 'Создать нового питомца?',
+                    body:
+                        'Текущий питомец, монеты и прогресс сбросятся. Дальше откроется создание персонажа.',
+                  );
+                  if (!ok || !context.mounted) return;
+                  await widget.controller.goToCreatePet();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded, color: AppTheme.ink),
+                title: const Text('Выйти из игры'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  SystemNavigator.pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -84,7 +131,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           .animate(onPlay: (c) => c.repeat(reverse: true))
                           .scaleXY(begin: 1, end: 1.03, duration: 1600.ms),
                     ),
-                    FinniPetView(pet: pet, size: petSize),
+                    _HomePet(
+                      controller: widget.controller,
+                      size: petSize,
+                    ),
                   ],
                 ),
               ),
@@ -115,15 +165,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.skip_next_rounded,
                               tooltip: 'Неделя',
                               color: AppTheme.gold,
-                              size: 56,
+                              size: 42,
                               showLabel: false,
                               onTap: _closeWeek,
                             ),
                           _RoundHud(
+                            icon: Icons.menu_rounded,
+                            tooltip: 'Меню',
+                            color: AppTheme.ink,
+                            size: 42,
+                            showLabel: false,
+                            onTap: () => _openSessionMenu(context),
+                          ),
+                          _RoundHud(
                             icon: FinniIcons.adult,
                             tooltip: 'Взрослым',
                             color: AppTheme.wave,
-                            size: 56,
+                            size: 42,
                             showLabel: false,
                             onTap: () =>
                                 _open(AdultScreen(controller: widget.controller)),
@@ -132,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: FinniIcons.help,
                             tooltip: 'Словарь',
                             color: AppTheme.sky,
-                            size: 56,
+                            size: 42,
                             showLabel: false,
                             onTap: () => _open(const GlossaryScreen()),
                           ),
@@ -210,52 +268,95 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
-                      child: Row(
-                        children: [
-                          _RoundHud(
-                            icon: FinniIcons.games,
-                            tooltip: 'Игры',
-                            color: AppTheme.peach,
-                            onTap: () => _open(
-                              GamesHubScreen(controller: widget.controller),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xF2FFF8E8),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: AppTheme.ink.withValues(alpha: 0.14),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.ink.withValues(alpha: 0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Center(
+                                  child: _RoundHud(
+                                    icon: FinniIcons.games,
+                                    tooltip: 'Игры',
+                                    color: AppTheme.peach,
+                                    size: 52,
+                                    onTap: () => _open(
+                                      GamesHubScreen(
+                                        controller: widget.controller,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: _RoundHud(
+                                    icon: FinniIcons.progress,
+                                    tooltip: 'Прогресс',
+                                    color: AppTheme.sky,
+                                    size: 52,
+                                    onTap: () => _open(
+                                      ProgressScreen(
+                                        controller: widget.controller,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: _StatHud(
+                                    icon: Icons.favorite_rounded,
+                                    percent: pet.mood,
+                                    tooltip: 'Настроение ${pet.mood}',
+                                    color: AppTheme.mint,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: _StatHud(
+                                    icon: Icons.restaurant_rounded,
+                                    percent: pet.satiety,
+                                    tooltip: 'Сытость ${pet.satiety}',
+                                    color: AppTheme.peach,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: _StatHud(
+                                    icon: FinniIcons.savings,
+                                    percent: goalPercent,
+                                    tooltip: goal == null
+                                        ? 'Цель не выбрана'
+                                        : '${goal.title}: ${p.savings} из ${goal.cost}. ${Economy.goalEta(p)}',
+                                    color: AppTheme.gold,
+                                    onTap: () => _open(
+                                      SavingsScreen(
+                                        controller: widget.controller,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          _RoundHud(
-                            icon: FinniIcons.progress,
-                            tooltip: 'Прогресс',
-                            color: AppTheme.sky,
-                            onTap: () => _open(
-                              ProgressScreen(controller: widget.controller),
-                            ),
-                          ),
-                          const Spacer(),
-                          _StatHud(
-                            icon: Icons.favorite_rounded,
-                            percent: pet.mood,
-                            tooltip: 'Настроение ${pet.mood}',
-                            color: AppTheme.mint,
-                          ),
-                          const SizedBox(width: 8),
-                          _StatHud(
-                            icon: Icons.restaurant_rounded,
-                            percent: pet.satiety,
-                            tooltip: 'Сытость ${pet.satiety}',
-                            color: AppTheme.peach,
-                          ),
-                          const SizedBox(width: 8),
-                          _StatHud(
-                            icon: FinniIcons.savings,
-                            percent: goalPercent,
-                            tooltip: goal == null
-                                ? 'Цель не выбрана'
-                                : '${goal.title}: ${p.savings} из ${goal.cost}. ${Economy.goalEta(p)}',
-                            color: AppTheme.gold,
-                            onTap: () => _open(
-                              SavingsScreen(controller: widget.controller),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -282,7 +383,7 @@ class _MusicHud extends StatelessWidget {
               : Icons.volume_up_rounded,
           tooltip: 'Громкость',
           color: AppTheme.ink,
-          size: 56,
+          size: 42,
           showLabel: false,
           onTap: () => _openVolumeSheet(context),
         );
@@ -434,12 +535,13 @@ class _RoundHud extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Stack(
                   clipBehavior: Clip.none,
+                  alignment: Alignment.center,
                   children: [
                     Container(
                       width: size,
@@ -450,6 +552,10 @@ class _RoundHud extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [color, color.withValues(alpha: 0.72)],
+                        ),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.28),
+                          width: 1.1,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -489,9 +595,12 @@ class _RoundHud extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     tooltip,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 12,
+                      fontSize: 11,
                       shadows: [Shadow(color: Colors.white, blurRadius: 8)],
                     ),
                   ),
@@ -522,22 +631,35 @@ class _StatHud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ring = Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTheme.card.withValues(alpha: 0.96),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.28),
+          width: 1.1,
+        ),
+      ),
+      child: ProgressRing(
+        value: percent / 100,
+        color: color,
+        size: 46,
+        stroke: 6,
+        child: Icon(icon, color: color, size: 20),
+      ),
+    );
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ProgressRing(
-          value: percent / 100,
-          color: color,
-          size: 78,
-          stroke: 8,
-          child: Icon(icon, color: color, size: 28),
-        ),
+        ring,
         const SizedBox(height: 2),
         Text(
           '$percent%',
           style: const TextStyle(
             fontWeight: FontWeight.w800,
-            fontSize: 13,
+            fontSize: 11,
             shadows: [Shadow(color: Colors.white, blurRadius: 8)],
           ),
         ),
@@ -554,6 +676,63 @@ class _StatHud extends StatelessWidget {
                 child: body,
               ),
       ),
+    );
+  }
+}
+
+class _HomePet extends StatefulWidget {
+  const _HomePet({required this.controller, required this.size});
+
+  final GameController controller;
+  final double size;
+
+  @override
+  State<_HomePet> createState() => _HomePetState();
+}
+
+class _HomePetState extends State<_HomePet> {
+  late Pet _pet;
+  late PetClip _clip;
+
+  @override
+  void initState() {
+    super.initState();
+    _pet = widget.controller.profile.pet!;
+    _clip = widget.controller.petClip;
+    widget.controller.addListener(_onCtrl);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onCtrl);
+    super.dispose();
+  }
+
+  void _onCtrl() {
+    final pet = widget.controller.profile.pet;
+    if (pet == null || !mounted) return;
+    final clip = widget.controller.petClip;
+    if (identical(pet, _pet) && clip == _clip) return;
+    if (clip == _clip &&
+        pet.name == _pet.name &&
+        pet.stage == _pet.stage &&
+        pet.look.id == _pet.look.id) {
+      return;
+    }
+    setState(() {
+      _pet = pet;
+      _clip = clip;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FinniPetView(
+      pet: _pet,
+      size: widget.size,
+      clip: _clip,
+      onTap: widget.controller.reactToPetTap,
+      onOneShotFinished: widget.controller.onActionClipFinished,
     );
   }
 }

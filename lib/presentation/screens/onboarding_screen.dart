@@ -5,7 +5,7 @@ import 'package:finpet/app/layout.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/screens/glossary_screen.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
-import 'package:finpet/presentation/widgets/finni_pet.dart';
+import 'package:finpet/presentation/widgets/pet/finni_pet.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
 class OnboardingScreen extends StatefulWidget {

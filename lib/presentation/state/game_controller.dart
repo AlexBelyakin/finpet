@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import 'package:finpet/app/pet_clips.dart';
+import 'package:finpet/data/pet/pet_model_bridge.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/data/storage/profile_store.dart';
 import 'package:finpet/domain/economy/engine.dart';
@@ -11,6 +15,73 @@ class GameController extends ChangeNotifier {
   final ProfileStore _store;
   GameProfile profile = GameProfile.empty();
   bool loaded = false;
+  PetClip? _queuedClip;
+  PetClip? _playingClip;
+  Timer? _clipTimer;
+
+  PetClip get petClip {
+    if (_playingClip != null) return _playingClip!;
+    final pet = profile.pet;
+    if (pet == null) return PetClip.idleGood;
+    return PetClips.idleFor(pet);
+  }
+
+  /// Клип после выхода на дом: покупка, задание, копилка, мини-игра.
+  void queueEventClip(PetClip clip) {
+    _clipTimer?.cancel();
+    _clipTimer = null;
+    _queuedClip = clip;
+    PetModelBridge.prepare(clip);
+  }
+
+  /// Сразу на доме: тап, закрытие недели.
+  void playClipNow(PetClip clip) {
+    _clipTimer?.cancel();
+    _clipTimer = null;
+    _queuedClip = null;
+    _playingClip = clip;
+    notifyListeners();
+    _armHold();
+  }
+
+  /// Дом снова на экране — запускаем отложенный клип события.
+  void presentQueuedClip() {
+    final queued = _queuedClip;
+    if (queued == null) return;
+    _queuedClip = null;
+    _playingClip = queued;
+    notifyListeners();
+    _armHold();
+  }
+
+  void onActionClipFinished() {
+    if (_playingClip == null) return;
+    if (!PetClips.returnsToIdle(_playingClip!)) return;
+    _clipTimer?.cancel();
+    _clipTimer = null;
+    _playingClip = null;
+    notifyListeners();
+  }
+
+  void _armHold() {
+    if (_playingClip == null || !PetClips.returnsToIdle(_playingClip!)) return;
+    _clipTimer = Timer(
+      PetClips.holdOf(_playingClip!) + const Duration(milliseconds: 800),
+      onActionClipFinished,
+    );
+  }
+
+  void reactToPetTap() {
+    final pet = profile.pet;
+    if (pet == null) return;
+    playClipNow(PetClips.reactFor(pet));
+  }
+
+  @override
+  void dispose() {
+    _clipTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> load() async {
     profile = await _store.read() ?? GameProfile.empty();
@@ -54,14 +125,25 @@ class GameController extends ChangeNotifier {
   }
 
   Future<EngineResult> buy(String itemId) async {
-    final result = Economy.buy(profile, Catalog.itemById(itemId));
-    if (result.ok) await _commit(result);
+    final item = Catalog.itemById(itemId);
+    final result = Economy.buy(profile, item);
+    if (result.ok) {
+      queueEventClip(PetClip.buyGood);
+      await _commit(result);
+    } else if (profile.pet != null && profile.coins < item.price) {
+      queueEventClip(PetClip.buyNo);
+    }
     return result;
   }
 
   Future<EngineResult> saveAmount(int amount) async {
     final result = Economy.transferToSavings(profile, amount);
-    if (result.ok) await _commit(result);
+    if (result.ok) {
+      final goal = Catalog.goalById(result.profile.goalId);
+      final reached = goal != null && result.profile.savings >= goal.cost;
+      queueEventClip(reached ? PetClip.saveDone : PetClip.saveAdd);
+      await _commit(result);
+    }
     return result;
   }
 
@@ -72,12 +154,15 @@ class GameController extends ChangeNotifier {
   }
 
   Future<EngineResult> completeTask(String taskId, TaskAnswer answer) async {
-    final result = Economy.completeTask(
-      profile,
-      Catalog.taskById(taskId),
-      answer,
-    );
-    if (result.ok) await _commit(result);
+    final task = Catalog.taskById(taskId);
+    final result = Economy.completeTask(profile, task, answer);
+    if (result.ok) {
+      final gained = result.profile.coins - profile.coins;
+      queueEventClip(
+        gained >= task.reward ? PetClip.taskRight : PetClip.taskWrong,
+      );
+      await _commit(result);
+    }
     return result;
   }
 
@@ -90,13 +175,25 @@ class GameController extends ChangeNotifier {
       title: title,
       requested: coins,
     );
-    if (result.ok) await _commit(result);
+    if (result.ok) {
+      queueEventClip(PetClip.reactJoy);
+      await _commit(result);
+    }
     return result;
   }
 
   Future<EngineResult> closePeriod() async {
+    final oldStage = profile.pet?.stage;
     final result = Economy.closePeriod(profile);
-    if (result.ok) await _commit(result);
+    if (result.ok) {
+      final stage = result.profile.pet?.stage;
+      if (stage != null && stage != oldStage) {
+        playClipNow(PetClips.stageFor(stage));
+      } else {
+        playClipNow(PetClip.reactJoy);
+      }
+      await _commit(result);
+    }
     return result;
   }
 
@@ -119,6 +216,13 @@ class GameController extends ChangeNotifier {
   Future<void> resetProfile() async {
     await _store.clear();
     profile = GameProfile.empty();
+    notifyListeners();
+  }
+
+  Future<void> goToCreatePet() async {
+    await _store.clear();
+    profile = GameProfile.empty().copyWith(seenIntro: true);
+    await _store.write(profile);
     notifyListeners();
   }
 }

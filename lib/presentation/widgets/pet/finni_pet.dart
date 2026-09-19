@@ -1,9 +1,10 @@
 import 'package:finpet/app/assets.dart';
 import 'package:finpet/app/layout.dart';
+import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
+import 'package:finpet/presentation/widgets/pet/finni_model_view.dart';
 import 'package:flutter/material.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 class RoomBackground extends StatelessWidget {
   const RoomBackground({
@@ -49,112 +50,48 @@ class SplashBackground extends StatelessWidget {
   }
 }
 
-bool get _inWidgetTest => WidgetsBinding.instance.runtimeType
-    .toString()
-    .contains('TestWidgetsFlutterBinding');
-
-/// Одна GLB-модель на всех экранах. PNG-питомцы больше не показываем.
+/// Biped-модель Meshy. Idle крутится, без вращения камеры.
 class LivingPet extends StatelessWidget {
   const LivingPet({
     super.key,
     required this.look,
     this.size = 220,
     this.mood = 80,
+    this.clip = PetClip.idleGood,
     this.onTap,
+    this.onOneShotFinished,
     this.interactive = true,
   });
 
   final PetLook look;
   final double size;
   final int mood;
+  final PetClip clip;
   final VoidCallback? onTap;
+  final VoidCallback? onOneShotFinished;
   final bool interactive;
 
   @override
   Widget build(BuildContext context) {
-    final tint = AppTheme.petTint(look.color);
-
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: size,
-        height: size + 18,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0, 0.55),
-                    radius: 0.82,
-                    colors: [
-                      tint.withValues(alpha: 0.18),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-                child: IgnorePointer(
-                  ignoring: true,
-                  child: const _PetModel(),
-                ),
+      behavior: HitTestBehavior.translucent,
+      child: Semantics(
+        label: look.speciesLabel,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: IgnorePointer(
+            ignoring: true,
+            child: RepaintBoundary(
+              child: buildPetModel(
+                clip: clip,
+                onOneShotFinished: onOneShotFinished,
               ),
             ),
-            Transform.scale(
-              scaleY: 0.38,
-              child: Container(
-                width: size * 0.62,
-                height: 18,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  color: const Color(0xFF4A372C).withValues(alpha: 0.22),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class _PetModel extends StatelessWidget {
-  const _PetModel();
-
-  @override
-  Widget build(BuildContext context) {
-    if (_inWidgetTest) {
-      return const FittedBox(
-        child: Icon(Icons.pets_rounded, color: AppTheme.mint),
-      );
-    }
-    return ModelViewer(
-      src: AppAssets.petModelSrc,
-      alt: 'Питомец Финни',
-      backgroundColor: const Color(0x00000000),
-      autoRotate: false,
-      autoPlay: false,
-      cameraControls: false,
-      disableZoom: true,
-      disablePan: true,
-      disableTap: true,
-      shadowIntensity: 1,
-      shadowSoftness: 0.6,
-      interactionPrompt: InteractionPrompt.none,
-      cameraOrbit: '0deg 88deg 118%',
-      minCameraOrbit: '0deg 88deg 118%',
-      maxCameraOrbit: '0deg 88deg 118%',
-      fieldOfView: '26deg',
-      loading: Loading.eager,
-      debugLogging: false,
-      relatedCss: '''
-model-viewer {
-  width: 100%;
-  height: 100%;
-  --poster-color: transparent;
-  --progress-bar-color: #7BC6A6;
-}
-''',
     );
   }
 }
@@ -165,13 +102,17 @@ class FinniPetView extends StatelessWidget {
     required this.pet,
     this.size = 180,
     this.showCaption = true,
+    this.clip,
     this.onTap,
+    this.onOneShotFinished,
   });
 
   final Pet pet;
   final double size;
   final bool showCaption;
+  final PetClip? clip;
   final VoidCallback? onTap;
+  final VoidCallback? onOneShotFinished;
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +130,9 @@ class FinniPetView extends StatelessWidget {
             look: pet.look,
             size: size,
             mood: pet.mood,
+            clip: clip ?? PetClips.idleFor(pet),
             onTap: onTap,
+            onOneShotFinished: onOneShotFinished,
           ),
         ),
         if (showCaption) ...[

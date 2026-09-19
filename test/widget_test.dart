@@ -1,4 +1,5 @@
 import 'package:finpet/app/app.dart';
+import 'package:finpet/app/assets.dart';
 import 'package:finpet/data/storage/profile_store.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +14,7 @@ void main() {
     await controller.load();
     await tester.pumpWidget(FinniApp(controller: controller));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 2300));
+    await tester.pump(AppSplash.hold);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('про монеты'), findsOneWidget);
   });
