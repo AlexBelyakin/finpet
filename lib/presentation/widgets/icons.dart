@@ -16,6 +16,13 @@ abstract final class FinniIcons {
   static const save = Icons.savings_outlined;
   static const pet = Icons.pets_rounded;
   static const games = Icons.sports_esports_rounded;
+  static const sparkle = Icons.auto_awesome_rounded;
+  static const check = Icons.check_circle_rounded;
+  static const close = Icons.cancel_rounded;
+  static const timer = Icons.timer_rounded;
+  static const cards = Icons.style_rounded;
+  static const jars = Icons.inventory_2_rounded;
+  static const catcher = Icons.pan_tool_rounded;
 
   static IconData forTask(TaskTheme theme) => switch (theme) {
         TaskTheme.budget => plan,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/presentation/screens/glossary_screen.dart';
+import 'package:finpet/presentation/widgets/common.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 
 class FinniScaffold extends StatelessWidget {
@@ -80,13 +81,15 @@ class SurfaceCard extends StatelessWidget {
       ),
       child: child,
     );
-    if (onTap == null) return card;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: card,
+    if (onTap == null) return PressScale(child: card);
+    return PressScale(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: card,
+        ),
       ),
     );
   }

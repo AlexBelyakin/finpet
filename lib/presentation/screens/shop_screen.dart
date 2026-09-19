@@ -128,10 +128,20 @@ class _ShopCard extends StatelessWidget {
       child: SurfaceCard(
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: AppTheme.sky.withValues(alpha: 0.25),
-              child: Icon(FinniIcons.forShop(item.id), color: AppTheme.ink),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: item.kind == ExpenseKind.need
+                      ? [AppTheme.peach, AppTheme.peach.withValues(alpha: 0.7)]
+                      : [AppTheme.sky, AppTheme.sky.withValues(alpha: 0.7)],
+                ),
+              ),
+              child: Icon(FinniIcons.forShop(item.id), color: Colors.white, size: 28),
             ),
             const SizedBox(width: 12),
             Expanded(

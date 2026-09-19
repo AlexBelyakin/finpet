@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import '../widgets/common.dart';
@@ -34,7 +36,28 @@ class _AdultScreenState extends State<AdultScreen> {
           children: [
             const Text('Чтобы войти, реши пример. Так ребёнок не сбросит прогресс случайно.'),
             const SizedBox(height: 16),
-            const Icon(Icons.family_restroom_rounded, size: 48),
+            Center(
+              child: Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.wave,
+                      AppTheme.wave.withValues(alpha: 0.7),
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.family_restroom_rounded,
+                  size: 44,
+                  color: Colors.white,
+                ),
+              ),
+            )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .scaleXY(begin: 1, end: 1.06, duration: 1400.ms),
             const SizedBox(height: 16),
             const Text('Сколько будет 8 + 5?'),
             const SizedBox(height: 8),
@@ -83,15 +106,17 @@ class _AdultScreenState extends State<AdultScreen> {
               'Стадия питомца: ${p.pet?.stageLabel ?? '—'}\n'
               'Темы заданий: ${themes.isEmpty ? 'пока нет' : themes.join(', ')}',
             ),
-          ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05),
           const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Демо-режим'),
-            subtitle: const Text('Недели идут подряд, без ожидания дней.'),
-            value: p.demoMode,
-            onChanged: widget.controller.setDemoMode,
-          ),
+          SurfaceCard(
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Демо-режим'),
+              subtitle: const Text('Недели идут подряд, без ожидания дней.'),
+              value: p.demoMode,
+              onChanged: widget.controller.setDemoMode,
+            ),
+          ).animate().fadeIn(duration: 320.ms),
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: () async {

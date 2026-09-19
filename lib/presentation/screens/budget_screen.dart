@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
@@ -69,13 +70,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
           else ...[
             Row(
               children: [
-                Expanded(child: _mini('Нужное', need, FinniIcons.need, AppTheme.peach)),
+                Expanded(child: _mini('Нужное', need, p.coins, FinniIcons.need, AppTheme.peach)),
                 const SizedBox(width: 8),
-                Expanded(child: _mini('Желаемое', want, FinniIcons.want, AppTheme.sky)),
+                Expanded(child: _mini('Желаемое', want, p.coins, FinniIcons.want, AppTheme.sky)),
                 const SizedBox(width: 8),
-                Expanded(child: _mini('Копилка', save, FinniIcons.save, AppTheme.mint)),
+                Expanded(child: _mini('Копилка', save, p.coins, FinniIcons.save, AppTheme.mint)),
               ],
-            ),
+            ).animate().fadeIn(duration: 280.ms).slideY(begin: 0.06),
             const SizedBox(height: 12),
             _slider('Нужное (еда и уход)', need, p.coins, FinniIcons.need, (v) {
               setState(() => need = v);
@@ -120,12 +121,18 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
-  Widget _mini(String label, int value, IconData icon, Color color) {
+  Widget _mini(String label, int value, int total, IconData icon, Color color) {
     return SurfaceCard(
       child: Column(
         children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 4),
+          ProgressRing(
+            value: total == 0 ? 0 : value / total,
+            color: color,
+            size: 64,
+            stroke: 7,
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 6),
           Text('$value', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
           Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
         ],

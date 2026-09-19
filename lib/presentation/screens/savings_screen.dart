@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:finpet/app/assets.dart';
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/domain/economy/engine.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
@@ -27,20 +28,59 @@ class _SavingsScreenState extends State<SavingsScreen> {
         final p = widget.controller.profile;
         final goal = Catalog.goalById(p.goalId);
         final maxPut = p.coins;
+        final goalValue = goal == null || goal.cost == 0
+            ? 0.0
+            : (p.savings / goal.cost).clamp(0.0, 1.0);
+        final percent = (goalValue * 100).round();
         return FinniScaffold(
           title: 'Копилка',
           body: ListView(
             children: [
-              Center(child: Image.asset(AppAssets.logo, height: 120)),
-              const SizedBox(height: 8),
-              Text(Economy.goalEta(p), textAlign: TextAlign.center),
+              SurfaceCard(
+                child: Column(
+                  children: [
+                    ProgressRing(
+                      value: goalValue,
+                      color: AppTheme.gold,
+                      size: 148,
+                      stroke: 14,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            goal?.emoji ?? '🐷',
+                            style: const TextStyle(fontSize: 28),
+                          ),
+                          Text(
+                            '$percent%',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      Economy.goalEta(p),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 320.ms).scale(
+                    begin: const Offset(0.94, 0.94),
+                    duration: 380.ms,
+                  ),
               const SizedBox(height: 12),
               const Text(
                 'Выбери цель — копилка работает на неё.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              ...Catalog.goals.map((item) {
+              ...Catalog.goals.asMap().entries.map((entry) {
+                final item = entry.value;
                 final selected = item.id == p.goalId;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -48,7 +88,18 @@ class _SavingsScreenState extends State<SavingsScreen> {
                     onTap: () => widget.controller.setGoal(item.id),
                     child: Row(
                       children: [
-                        Text(item.emoji, style: const TextStyle(fontSize: 28)),
+                        Container(
+                          width: 52,
+                          height: 52,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: selected
+                                ? AppTheme.gold.withValues(alpha: 0.35)
+                                : AppTheme.sky.withValues(alpha: 0.18),
+                          ),
+                          child: Text(item.emoji, style: const TextStyle(fontSize: 26)),
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -58,11 +109,15 @@ class _SavingsScreenState extends State<SavingsScreen> {
                             ),
                           ),
                         ),
-                        if (selected) const Icon(Icons.check),
+                        if (selected)
+                          const Icon(Icons.check_circle, color: AppTheme.gold, size: 28),
                       ],
                     ),
                   ),
-                );
+                )
+                    .animate()
+                    .fadeIn(duration: 260.ms, delay: (40 * entry.key).ms)
+                    .slideX(begin: 0.04);
               }),
               if (goal != null) ...[
                 Text('Накоплено ${p.savings} из ${goal.cost}'),

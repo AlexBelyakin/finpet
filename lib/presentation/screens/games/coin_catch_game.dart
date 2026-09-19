@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
+import 'package:finpet/presentation/screens/games/game_ui.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
@@ -29,7 +30,7 @@ class _Token {
 
   final int id;
   final double x;
-  final double y;
+  double y;
   final _TokenKind kind;
 }
 
@@ -40,6 +41,7 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
   final _tokens = <_Token>[];
   Timer? _spawn;
   Timer? _tick;
+  Timer? _clock;
   int _id = 1;
   int _score = 0;
   int _time = _duration;
@@ -56,8 +58,10 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
   void _stopTimers() {
     _spawn?.cancel();
     _tick?.cancel();
+    _clock?.cancel();
     _spawn = null;
     _tick = null;
+    _clock = null;
   }
 
   void _start() {
@@ -81,16 +85,21 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
       final token = _Token(
         id: _id++,
         x: 0.08 + _rng.nextDouble() * 0.78,
-        y: 0.12 + _rng.nextDouble() * 0.70,
+        y: -0.08,
         kind: kind,
       );
       setState(() => _tokens.add(token));
-      Future<void>.delayed(const Duration(milliseconds: 1250), () {
-        if (!mounted) return;
-        setState(() => _tokens.removeWhere((e) => e.id == token.id));
+    });
+    _tick = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted || !_running) return;
+      setState(() {
+        for (final token in _tokens) {
+          token.y += 0.022;
+        }
+        _tokens.removeWhere((e) => e.y > 1.12);
       });
     });
-    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+    _clock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || !_running) return;
       if (_time <= 1) {
         _finish();
@@ -223,8 +232,7 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
                 final h = box.maxHeight;
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(28),
-                  child: ColoredBox(
-                    color: const Color(0xFFE8F6FF),
+                  child: SoftPlayField(
                     child: Stack(
                       children: [
                         for (final token in _tokens)
@@ -236,7 +244,11 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
                               child: SizedBox(
                                 width: 56,
                                 height: 56,
-                                child: _tokenView(token.kind),
+                                child: AnimatedScale(
+                                  scale: 1,
+                                  duration: const Duration(milliseconds: 120),
+                                  child: _tokenView(token.kind),
+                                ),
                               ),
                             ),
                           ),

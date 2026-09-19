@@ -1,11 +1,11 @@
 {
-    "name": "finpet",
-    "short_name": "finpet",
+    "name": "Питомец Финни",
+    "short_name": "Питомец Финни",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Игровой сервис финансовой грамотности для детей 7–11 лет.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

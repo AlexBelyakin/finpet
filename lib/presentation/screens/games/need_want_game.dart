@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/icons.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
 class NeedWantGameScreen extends StatefulWidget {
@@ -120,83 +121,112 @@ class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
           const Spacer(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
-            child: Container(
+            child: Draggable<_NeedWantItem>(
               key: ValueKey(_idx),
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFE5D4FF), Color(0xFFFFE4F2)],
-                ),
+              data: current,
+              feedback: Material(
+                color: Colors.transparent,
+                child: Text(current.emoji, style: const TextStyle(fontSize: 72)),
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(current.emoji, style: const TextStyle(fontSize: 64)),
-                      const SizedBox(height: 8),
-                      Text(
-                        current.label,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_correct != null)
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: (_correct! ? AppTheme.mint : AppTheme.peach)
-                            .withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          _correct! ? Icons.check_rounded : Icons.close_rounded,
-                          size: 72,
-                          color: _correct! ? const Color(0xFF2F7A5D) : Colors.red[800],
-                        ),
-                      ),
-                    ),
-                ],
+              childWhenDragging: Opacity(
+                opacity: 0.35,
+                child: _itemCard(current, _correct),
               ),
+              child: _itemCard(current, _correct),
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Это «надо» или «хочу»?'),
+          const Text('Нажми или перетащи карточку в «надо» или «хочу»'),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF2F7A5D),
-                    minimumSize: const Size(48, 64),
-                  ),
-                  onPressed: () => _answer(ExpenseKind.need),
-                  child: const Text('Надо'),
+                child: DragTarget<_NeedWantItem>(
+                  onAcceptWithDetails: (_) => _answer(ExpenseKind.need),
+                  builder: (context, cand, rej) {
+                    return FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: cand.isNotEmpty
+                            ? const Color(0xFF1F5C45)
+                            : const Color(0xFF2F7A5D),
+                        minimumSize: const Size(48, 64),
+                      ),
+                      onPressed: () => _answer(ExpenseKind.need),
+                      child: const Text('Надо'),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE36A8A),
-                    minimumSize: const Size(48, 64),
-                  ),
-                  onPressed: () => _answer(ExpenseKind.want),
-                  child: const Text('Хочу'),
+                child: DragTarget<_NeedWantItem>(
+                  onAcceptWithDetails: (_) => _answer(ExpenseKind.want),
+                  builder: (context, cand, rej) {
+                    return FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: cand.isNotEmpty
+                            ? const Color(0xFFC44D6C)
+                            : const Color(0xFFE36A8A),
+                        minimumSize: const Size(48, 64),
+                      ),
+                      onPressed: () => _answer(ExpenseKind.want),
+                      child: const Text('Хочу'),
+                    );
+                  },
                 ),
               ),
             ],
           ),
           const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemCard(_NeedWantItem current, bool? correct) {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE5D4FF), Color(0xFFFFE4F2)],
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(current.emoji, style: const TextStyle(fontSize: 64)),
+              const SizedBox(height: 8),
+              Text(
+                current.label,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (correct != null)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: (correct ? AppTheme.mint : AppTheme.peach)
+                    .withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Center(
+                child: Icon(
+                  correct ? FinniIcons.check : FinniIcons.close,
+                  size: 72,
+                  color: correct ? const Color(0xFF2F7A5D) : Colors.red[800],
+                ),
+              ),
+            ),
         ],
       ),
     );
