@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
+import 'package:finpet/presentation/screens/games/game_ui.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/common.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
@@ -16,28 +18,101 @@ class NeedWantGameScreen extends StatefulWidget {
 }
 
 class _NeedWantItem {
-  const _NeedWantItem(this.emoji, this.label, this.kind);
+  const _NeedWantItem(this.emoji, this.label, this.kind, this.why);
   final String emoji;
   final String label;
   final ExpenseKind kind;
+  final String why;
+
+  String explain(ExpenseKind picked) {
+    if (kind == ExpenseKind.need) {
+      return '$label — это нужное. $why Ты выбрал «хочу», а без этого обойтись трудно.';
+    }
+    return '$label — это желаемое. $why Ты выбрал «надо», но без этого можно обойтись.';
+  }
 }
 
 class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
   static const _pool = [
-    _NeedWantItem('🍞', 'Хлеб', ExpenseKind.need),
-    _NeedWantItem('🎮', 'Новая игра', ExpenseKind.want),
-    _NeedWantItem('🚌', 'Проезд в школу', ExpenseKind.need),
-    _NeedWantItem('🍭', 'Леденец', ExpenseKind.want),
-    _NeedWantItem('💊', 'Лекарство', ExpenseKind.need),
-    _NeedWantItem('🧸', 'Игрушка', ExpenseKind.want),
-    _NeedWantItem('📚', 'Учебник', ExpenseKind.need),
-    _NeedWantItem('🎈', 'Шарик', ExpenseKind.want),
-    _NeedWantItem('🧦', 'Тёплые носки', ExpenseKind.need),
-    _NeedWantItem('🍦', 'Лишнее мороженое', ExpenseKind.want),
-    _NeedWantItem('🪥', 'Зубная щётка', ExpenseKind.need),
-    _NeedWantItem('💎', 'Блестящая наклейка', ExpenseKind.want),
-    _NeedWantItem('🥣', 'Корм для питомца', ExpenseKind.need),
-    _NeedWantItem('🎀', 'Бантик', ExpenseKind.want),
+    _NeedWantItem('🍞', 'Хлеб', ExpenseKind.need, 'Это еда, без неё нельзя.'),
+    _NeedWantItem(
+      '🎮',
+      'Новая игра',
+      ExpenseKind.want,
+      'Без новой игры можно жить.',
+    ),
+    _NeedWantItem(
+      '🚌',
+      'Проезд в школу',
+      ExpenseKind.need,
+      'Без проезда не добраться до школы.',
+    ),
+    _NeedWantItem(
+      '🍭',
+      'Леденец',
+      ExpenseKind.want,
+      'Сладость приятная, но не обязательная.',
+    ),
+    _NeedWantItem(
+      '💊',
+      'Лекарство',
+      ExpenseKind.need,
+      'Здоровье важнее игрушек.',
+    ),
+    _NeedWantItem(
+      '🧸',
+      'Игрушка',
+      ExpenseKind.want,
+      'Игрушка радует, но без неё можно.',
+    ),
+    _NeedWantItem(
+      '📚',
+      'Учебник',
+      ExpenseKind.need,
+      'Учебник нужен для учёбы.',
+    ),
+    _NeedWantItem(
+      '🎈',
+      'Шарик',
+      ExpenseKind.want,
+      'Шарик — это праздник, не необходимость.',
+    ),
+    _NeedWantItem(
+      '🧦',
+      'Тёплые носки',
+      ExpenseKind.need,
+      'Одежда защищает от холода.',
+    ),
+    _NeedWantItem(
+      '🍦',
+      'Лишнее мороженое',
+      ExpenseKind.want,
+      'Лишнее мороженое — это хотелка.',
+    ),
+    _NeedWantItem(
+      '🪥',
+      'Зубная щётка',
+      ExpenseKind.need,
+      'Гигиена нужна каждый день.',
+    ),
+    _NeedWantItem(
+      '💎',
+      'Блестящая наклейка',
+      ExpenseKind.want,
+      'Наклейка красивая, но без неё можно.',
+    ),
+    _NeedWantItem(
+      '🥣',
+      'Корм для питомца',
+      ExpenseKind.need,
+      'Питомец должен есть.',
+    ),
+    _NeedWantItem(
+      '🎀',
+      'Бантик',
+      ExpenseKind.want,
+      'Бантик украшает, но не кормит.',
+    ),
   ];
 
   late List<_NeedWantItem> _items;
@@ -61,7 +136,17 @@ class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
       _correct = ok;
       if (ok) _score += 1;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 650));
+    if (!ok) {
+      if (mounted) {
+        await showOkHint(
+          context,
+          title: 'Ой, не так',
+          body: _items[_idx].explain(kind),
+        );
+      }
+    } else {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
     if (!mounted) return;
     if (_idx + 1 >= _items.length) {
       setState(() => _done = true);
@@ -83,26 +168,20 @@ class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
   @override
   Widget build(BuildContext context) {
     if (_done) {
-      return FinniScaffold(
+      return GameResultBody(
         title: 'Надо или хочу?',
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🎉', style: TextStyle(fontSize: 64)),
-              const SizedBox(height: 8),
-              Text('Правильно: $_score из ${_items.length}',
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text('+${_score * 6} монет'),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Отлично'),
-              ),
-            ],
-          ),
-        ),
+        scoreLine: 'Правильно: $_score из ${_items.length}',
+        coinsLine: '+${_score * 6} монет',
+        onAgain: () => setState(() {
+          _items = [..._pool]..shuffle();
+          _items = _items.take(8).toList();
+          _idx = 0;
+          _score = 0;
+          _done = false;
+          _paid = false;
+          _correct = null;
+        }),
+        onDone: () => Navigator.pop(context),
       );
     }
 
@@ -144,15 +223,13 @@ class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
                 child: DragTarget<_NeedWantItem>(
                   onAcceptWithDetails: (_) => _answer(ExpenseKind.need),
                   builder: (context, cand, rej) {
-                    return FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: cand.isNotEmpty
-                            ? const Color(0xFF1F5C45)
-                            : const Color(0xFF2F7A5D),
-                        minimumSize: const Size(48, 64),
-                      ),
-                      onPressed: () => _answer(ExpenseKind.need),
-                      child: const Text('Надо'),
+                    final hot = cand.isNotEmpty;
+                    return _KindBin(
+                      label: 'Надо',
+                      icon: FinniIcons.need,
+                      color: const Color(0xFF5FCBB0),
+                      hot: hot,
+                      onTap: () => _answer(ExpenseKind.need),
                     );
                   },
                 ),
@@ -162,15 +239,13 @@ class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
                 child: DragTarget<_NeedWantItem>(
                   onAcceptWithDetails: (_) => _answer(ExpenseKind.want),
                   builder: (context, cand, rej) {
-                    return FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: cand.isNotEmpty
-                            ? const Color(0xFFC44D6C)
-                            : const Color(0xFFE36A8A),
-                        minimumSize: const Size(48, 64),
-                      ),
-                      onPressed: () => _answer(ExpenseKind.want),
-                      child: const Text('Хочу'),
+                    final hot = cand.isNotEmpty;
+                    return _KindBin(
+                      label: 'Хочу',
+                      icon: FinniIcons.want,
+                      color: const Color(0xFFF27BA0),
+                      hot: hot,
+                      onTap: () => _answer(ExpenseKind.want),
                     );
                   },
                 ),
@@ -228,6 +303,49 @@ class _NeedWantGameScreenState extends State<NeedWantGameScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _KindBin extends StatelessWidget {
+  const _KindBin({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.hot,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool hot;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      child: Material(
+        color: color.withValues(alpha: hot ? 0.28 : 0.14),
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                CircleGlyph(icon: icon, color: color, size: 56, iconSize: 28),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

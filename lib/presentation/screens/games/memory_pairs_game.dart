@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/presentation/screens/games/game_ui.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/icons.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
 class _Card {
@@ -25,6 +26,18 @@ class MemoryPairsGameScreen extends StatefulWidget {
 }
 
 class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
+  static const _pool = [
+    (0, '🥣', 'Корм'),
+    (1, '🚌', 'Проезд'),
+    (2, '🧸', 'Игрушка'),
+    (3, '🐷', 'Копилка'),
+    (4, '💊', 'Лекарство'),
+    (5, '🎮', 'Игра'),
+    (6, '🍦', 'Мороженое'),
+    (7, '🏠', 'Домик'),
+  ];
+
+  MiniDifficulty? _level;
   late List<_Card> _cards;
   int? _first;
   bool _lock = false;
@@ -32,19 +45,30 @@ class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
   bool _finished = false;
   bool _paid = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _deal();
+  int get _pairCount => switch (_level) {
+        MiniDifficulty.easy => 4,
+        MiniDifficulty.hard => 8,
+        _ => 6,
+      };
+
+  int get _peekMs => switch (_level) {
+        MiniDifficulty.easy => 900,
+        MiniDifficulty.hard => 380,
+        _ => 650,
+      };
+
+  int get _coins {
+    final bonus = switch (_level) {
+      MiniDifficulty.easy => 12,
+      MiniDifficulty.hard => 22,
+      _ => 16,
+    };
+    return (bonus - _moves).clamp(4, 28);
   }
 
-  void _deal() {
-    const pairs = [
-      (0, '🥣', 'Корм'),
-      (1, '🚌', 'Проезд'),
-      (2, '🧸', 'Игрушка'),
-      (3, '🐷', 'Копилка'),
-    ];
+  void _deal(MiniDifficulty level) {
+    _level = level;
+    final pairs = _pool.take(_pairCount).toList();
     final cards = <_Card>[];
     var i = 0;
     for (final p in pairs) {
@@ -71,7 +95,7 @@ class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
     _moves += 1;
     final a = _first!;
     final b = index;
-    await Future<void>.delayed(const Duration(milliseconds: 650));
+    await Future<void>.delayed(Duration(milliseconds: _peekMs));
     if (!mounted) return;
     if (_cards[a].pair == _cards[b].pair) {
       setState(() {
@@ -84,10 +108,9 @@ class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
         setState(() => _finished = true);
         if (!_paid) {
           _paid = true;
-          final coins = (12 - _moves).clamp(4, 24);
           await widget.controller.rewardMinigame(
             title: 'Игра «Пары»',
-            coins: coins,
+            coins: _coins,
           );
         }
       }
@@ -103,13 +126,22 @@ class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_level == null) {
+      return DifficultyStart(
+        title: 'Найди пары',
+        icon: Icons.grid_view_rounded,
+        color: AppTheme.lilac,
+        howTo: 'Открой две одинаковые карточки: нужное, желаемое или копилка.',
+        onPick: (level) => setState(() => _deal(level)),
+      );
+    }
+
     if (_finished) {
-      final coins = (12 - _moves).clamp(4, 24);
       return GameResultBody(
         title: 'Найди пары',
-        scoreLine: 'Ходы: $_moves',
-        coinsLine: '+$coins монет',
-        onAgain: () => setState(_deal),
+        scoreLine: 'Ходы: $_moves · ${_level!.label}',
+        coinsLine: '+$_coins монет',
+        onAgain: () => setState(() => _level = null),
         onDone: () => Navigator.pop(context),
       );
     }
@@ -118,16 +150,21 @@ class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
       title: 'Найди пары',
       body: Column(
         children: [
-          const Text('Открой две одинаковые карточки: нужное, желаемое или копилка.'),
+          Text(
+            'Открой две одинаковые карточки. Уровень: ${_level!.label}',
+          ),
           const SizedBox(height: 8),
-          Text('Ходы: $_moves', style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            'Ходы: $_moves',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: SoftPlayField(
               colors: const [Color(0xFFEDE4FF), Color(0xFFFFE8F2)],
               child: GridView.builder(
                 padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
@@ -153,15 +190,25 @@ class _MemoryPairsGameScreenState extends State<MemoryPairsGameScreen> {
                             ? Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(card.emoji, style: const TextStyle(fontSize: 28)),
+                                  Text(
+                                    card.emoji,
+                                    style: const TextStyle(fontSize: 28),
+                                  ),
                                   Text(
                                     card.label,
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               )
-                            : const Icon(Icons.help_rounded, color: Colors.white),
+                            : const Icon(
+                                FinniIcons.cards,
+                                color: Colors.white,
+                                size: 28,
+                              ),
                       ),
                     ),
                   );
