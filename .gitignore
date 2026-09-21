@@ -63,8 +63,9 @@ ios/Flutter/Flutter.podspec
 /fon_zagruzki_planshet.png
 /fon_zagruzki*.png
 
-# Local Meshy dump (клипы уже в assets/models/finni/)
+# Local Meshy dump (клипы уже в assets/models/finni/ и nori/)
 /Meshy_AI_*/
+/meshy/
 
 # Local agent files
 .cursor/
