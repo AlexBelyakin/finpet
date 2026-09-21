@@ -227,33 +227,96 @@ class FeedbackBanner extends StatelessWidget {
 }
 
 class SpeechBubble extends StatelessWidget {
-  const SpeechBubble({super.key, required this.text});
+  const SpeechBubble({
+    super.key,
+    required this.text,
+    this.tail = SpeechTail.bottom,
+  });
 
   final String text;
+  final SpeechTail tail;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.card.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.ink.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    const border = Color(0xFFE6E0D4);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: Column(
+        key: ValueKey(text),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 196),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: border),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.ink.withValues(alpha: 0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                text,
+                textAlign: TextAlign.left,
+                style: const TextStyle(
+                  fontFamily: AppFonts.body,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  height: 1.35,
+                  color: AppTheme.ink,
+                ),
+              ),
+            ),
           ),
+          if (tail == SpeechTail.bottom)
+            Transform.translate(
+              offset: const Offset(22, -1),
+              child: CustomPaint(
+                size: const Size(16, 10),
+                painter: _TailPainter(fill: Colors.white, border: border),
+              ),
+            ),
         ],
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }
+}
+
+enum SpeechTail { none, bottom }
+
+class _TailPainter extends CustomPainter {
+  const _TailPainter({required this.fill, required this.border});
+
+  final Color fill;
+  final Color border;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width * 0.5, size.height)
+      ..lineTo(size.width, 0)
+      ..close();
+    canvas.drawPath(path, Paint()..color = fill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TailPainter oldDelegate) =>
+      oldDelegate.fill != fill || oldDelegate.border != border;
 }
 
 Future<bool> confirmAction(
@@ -281,6 +344,112 @@ Future<bool> confirmAction(
     },
   );
   return result ?? false;
+}
+
+Future<void> showOkHint(
+  BuildContext context, {
+  required String title,
+  required String body,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.playGreen,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Ок'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+String taskPraiseTitle({required bool good, required String taskId}) {
+  const goodTitles = [
+    'Молодец!',
+    'Так держать!',
+    'Супер!',
+    'Умница!',
+    'Отлично!',
+  ];
+  const okTitles = [
+    'Ты справился!',
+    'Хорошая попытка!',
+    'Есть прогресс!',
+  ];
+  final pool = good ? goodTitles : okTitles;
+  return pool[taskId.hashCode.abs() % pool.length];
+}
+
+Future<void> showTaskPraise(
+  BuildContext context, {
+  required bool good,
+  required String taskId,
+  required int coins,
+  required int balance,
+  required String explain,
+  String? extra,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(taskPraiseTitle(good: good, taskId: taskId)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleGlyph(
+              icon: good ? Icons.star_rounded : Icons.favorite_rounded,
+              color: good ? const Color(0xFFE8B84A) : AppTheme.peach,
+              size: 72,
+              iconSize: 38,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '+$coins монет за это задание',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: AppFonts.display,
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Теперь у тебя $balance монет.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(explain, textAlign: TextAlign.center),
+            if (extra != null && extra.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(extra, textAlign: TextAlign.center),
+            ],
+          ],
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.playGreen,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Ура!'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 void showResult(BuildContext context, {required String message, required String next}) {
@@ -330,6 +499,43 @@ class _PressScaleState extends State<PressScale> {
         curve: Curves.easeOut,
         child: widget.child,
       ),
+    );
+  }
+}
+
+class CircleGlyph extends StatelessWidget {
+  const CircleGlyph({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.size = 56,
+    this.iconSize,
+    this.iconColor = Colors.white,
+  });
+
+  final IconData icon;
+  final Color color;
+  final double size;
+  final double? iconSize;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.32),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: iconColor, size: iconSize ?? size * 0.5),
     );
   }
 }

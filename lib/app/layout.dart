@@ -37,4 +37,10 @@ abstract final class AppLayout {
 
   static double petFloorPad(BuildContext context) =>
       isWide(context) ? 28 : (isTablet(context) ? 16 : 8);
+
+  /// Декод картинки под ширину экрана, а не в исходных 4–7 МБ.
+  static int imageCacheWidth(BuildContext context, {int max = 1600}) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    return (sizeOf(context).width * dpr).round().clamp(320, max);
+  }
 }

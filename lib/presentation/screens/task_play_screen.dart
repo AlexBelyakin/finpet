@@ -117,14 +117,32 @@ class _TaskPlayScreenState extends State<TaskPlayScreen> {
                 );
                 return;
               }
-              final result = await widget.controller.completeTask(task.id, answer);
+              final before = widget.controller.profile.coins;
+              final result =
+                  await widget.controller.completeTask(task.id, answer);
               if (!context.mounted) return;
-              showResult(
+              if (!result.ok) {
+                showResult(
+                  context,
+                  message: result.message,
+                  next: result.nextStep,
+                );
+                return;
+              }
+              final coins = result.profile.coins - before;
+              final good = coins >= task.reward;
+              await showTaskPraise(
                 context,
-                message: result.message,
-                next: result.nextStep,
+                good: good,
+                taskId: task.id,
+                coins: coins,
+                balance: result.profile.coins,
+                explain: good ? task.explainGood : task.explainOther,
+                extra: result.nextStep.contains('усадьба')
+                    ? result.nextStep
+                    : null,
               );
-              if (result.ok) Navigator.of(context).pop();
+              if (context.mounted) Navigator.of(context).pop();
             },
             child: const Text('Готово'),
           ),
