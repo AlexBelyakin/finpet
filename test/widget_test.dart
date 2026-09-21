@@ -16,6 +16,7 @@ void main() {
     await tester.pump();
     await tester.pump(AppSplash.hold);
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.textContaining('про монеты'), findsOneWidget);
+    expect(find.textContaining('Привет! Это игра'), findsOneWidget);
+    expect(find.text('Играть!'), findsOneWidget);
   });
 }

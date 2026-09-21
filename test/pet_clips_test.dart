@@ -32,4 +32,11 @@ void main() {
     expect(PetClips.returnsToIdle(PetClip.buyGood), isTrue);
     expect(PetClips.returnsToIdle(PetClip.idleGood), isFalse);
   });
+
+  test('клип второго тела — nori', () {
+    expect(
+      PetClips.asset(PetClip.idleGood, PetBody.nori),
+      'assets/models/nori/idle_good.glb',
+    );
+  });
 }

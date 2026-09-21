@@ -4,6 +4,7 @@ import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/data/pet/pet_model_bridge.dart';
 import 'package:finpet/data/pet/pet_model_runtime.dart';
+import 'package:finpet/domain/models.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -14,6 +15,7 @@ bool get _inWidgetTest => WidgetsBinding.instance.runtimeType
 
 Widget buildPetModelImpl({
   required PetClip clip,
+  PetBody body = PetBody.finni,
   VoidCallback? onOneShotFinished,
 }) {
   if (_inWidgetTest) {
@@ -21,13 +23,22 @@ Widget buildPetModelImpl({
       child: Icon(Icons.pets_rounded, color: AppTheme.mint),
     );
   }
-  return _HostedPetModel(clip: clip, onOneShotFinished: onOneShotFinished);
+  return _HostedPetModel(
+    clip: clip,
+    body: body,
+    onOneShotFinished: onOneShotFinished,
+  );
 }
 
 class _HostedPetModel extends StatefulWidget {
-  const _HostedPetModel({required this.clip, this.onOneShotFinished});
+  const _HostedPetModel({
+    required this.clip,
+    required this.body,
+    this.onOneShotFinished,
+  });
 
   final PetClip clip;
+  final PetBody body;
   final VoidCallback? onOneShotFinished;
 
   @override
@@ -56,13 +67,14 @@ class _HostedPetModelState extends State<_HostedPetModel> {
   @override
   void didUpdateWidget(covariant _HostedPetModel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.clip != widget.clip) {
+    if (oldWidget.clip != widget.clip || oldWidget.body != widget.body) {
       _apply(widget.clip);
     }
   }
 
   Future<void> _boot() async {
     await PetModelRuntime.instance.start();
+    await PetModelRuntime.instance.ensureBody(widget.body);
     final url = PetModelRuntime.instance.baseUrl;
     if (!mounted || url == null) return;
 
@@ -101,7 +113,10 @@ class _HostedPetModelState extends State<_HostedPetModel> {
   Future<void> _apply(PetClip clip) async {
     final web = _web;
     if (web == null) return;
-    final name = jsonEncode(PetClips.fileKey(clip));
+    await PetModelRuntime.instance.ensureBody(widget.body);
+    final body = jsonEncode(widget.body.name);
+    final name = jsonEncode(PetClips.clipName(clip));
+    await web.runJavaScript('Finni.setBody($body);');
     if (PetClips.returnsToIdle(clip)) {
       final loop = PetClips.isLoop(clip);
       await web.runJavaScript('Finni.playAction($name, $loop);');
@@ -113,8 +128,10 @@ class _HostedPetModelState extends State<_HostedPetModel> {
   Future<void> _prepare(PetClip clip) async {
     final web = _web;
     if (web == null) return;
-    final name = jsonEncode(PetClips.fileKey(clip));
-    await web.runJavaScript('Finni.prepare($name);');
+    await PetModelRuntime.instance.ensureBody(widget.body);
+    final body = jsonEncode(widget.body.name);
+    final name = jsonEncode(PetClips.clipName(clip));
+    await web.runJavaScript('Finni.setBody($body); Finni.prepare($name);');
   }
 
   @override

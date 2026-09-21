@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/data/pet/pet_model_bridge.dart';
+import 'package:finpet/data/pet/pet_model_runtime.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/data/storage/profile_store.dart';
 import 'package:finpet/domain/economy/engine.dart';
@@ -87,6 +88,10 @@ class GameController extends ChangeNotifier {
     profile = await _store.read() ?? GameProfile.empty();
     loaded = true;
     notifyListeners();
+    final body = profile.pet?.look.body;
+    if (body != null) {
+      unawaited(PetModelRuntime.instance.ensureBody(body));
+    }
   }
 
   Future<void> _commit(EngineResult result) async {
@@ -115,6 +120,7 @@ class GameController extends ChangeNotifier {
       look: look,
     );
     await _commit(result);
+    unawaited(PetModelRuntime.instance.ensureBody(look.body));
     return result;
   }
 

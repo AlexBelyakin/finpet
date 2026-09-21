@@ -1,43 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:finpet/app/layout.dart';
-import 'package:finpet/domain/models.dart';
+import 'package:finpet/app/assets.dart';
+import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/presentation/screens/glossary_screen.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
 import 'package:finpet/presentation/widgets/pet/finni_pet.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key, required this.controller});
 
   final GameController controller;
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
-}
-
-class _OnboardingScreenState extends State<OnboardingScreen> {
-  static const _pages = [
-    (
-      'Это игра про монеты',
-      'Ты заботишься о питомце Финни. Настоящие деньги сюда не нужны.',
-    ),
-    (
-      'Три решения',
-      'Потратить на нужное. Потратить на желаемое. Отложить в копилку.',
-    ),
-    (
-      'Ошибки можно чинить',
-      'Если потратил не так — питомец не пропадёт. Сложи новый план и попробуй снова.',
-    ),
-  ];
-  int _index = 0;
-
-  @override
   Widget build(BuildContext context) {
-    final page = _pages[_index];
-    final pet = AppLayout.petSize(context, phone: 168, tablet: 240);
     return Scaffold(
       body: SplashBackground(
         child: SafeArea(
@@ -59,46 +36,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 const Spacer(),
-                LivingPet(
-                  look: const PetLook(
-                    species: PetSpecies.cat,
-                    color: PetColor.mint,
-                  ),
-                  size: pet,
-                  interactive: false,
-                ),
+                Image.asset(AppAssets.logo, height: 96),
                 const SizedBox(height: 20),
                 SurfaceCard(
                   child: Column(
                     children: [
                       Text(
-                        page.$1,
+                        'Привет! Это игра про заботу о питомце и монетах.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
-                        page.$2,
+                        'Дели монеты на нужное, желаемое и копилку. Помогай питомцу заданиями и покупками. Настоящие деньги не нужны: если что-то пошло не так, питомец останется — сложи новый план и попробуй снова.',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 17, height: 1.35),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Готов играть?',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
                   ),
-                ).animate(key: ValueKey(_index)).fadeIn(duration: 280.ms),
+                ).animate().fadeIn(duration: 280.ms),
                 const Spacer(),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () async {
-                      if (_index < _pages.length - 1) {
-                        setState(() => _index += 1);
-                        return;
-                      }
-                      await widget.controller.markIntroSeen();
-                    },
-                    child: Text(
-                      _index < _pages.length - 1 ? 'Дальше' : 'Создать питомца',
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.playGreen,
+                      foregroundColor: Colors.white,
                     ),
+                    onPressed: () => controller.markIntroSeen(),
+                    child: const Text('Играть!'),
                   ),
                 ),
               ],

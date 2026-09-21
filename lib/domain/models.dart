@@ -1,3 +1,5 @@
+enum PetBody { finni, nori }
+
 enum PetSpecies { cat, fox, bird }
 
 enum PetColor { peach, mint, sky, wave }
@@ -11,18 +13,24 @@ enum TaskTheme { budget, savings, purchases }
 enum TaskType { allocate, choice }
 
 class PetLook {
-  const PetLook({required this.species, required this.color});
+  const PetLook({
+    this.body = PetBody.finni,
+    required this.species,
+    required this.color,
+  });
 
+  final PetBody body;
   final PetSpecies species;
   final PetColor color;
 
-  String get id => '${species.name}_${color.name}';
+  String get id => '${body.name}_${species.name}_${color.name}';
 
-  String get speciesLabel => switch (species) {
-        PetSpecies.cat => 'Котёнок',
-        PetSpecies.fox => 'Лисёнок',
-        PetSpecies.bird => 'Птенчик',
+  String get bodyLabel => switch (body) {
+        PetBody.finni => 'Финни',
+        PetBody.nori => 'Нори',
       };
+
+  String get speciesLabel => bodyLabel;
 
   String get colorLabel => switch (color) {
         PetColor.peach => 'Персик',
@@ -32,11 +40,15 @@ class PetLook {
       };
 
   Map<String, dynamic> toJson() => {
+        'body': body.name,
         'species': species.name,
         'color': color.name,
       };
 
   factory PetLook.fromJson(Map<String, dynamic> json) => PetLook(
+        body: json['body'] == null
+            ? PetBody.finni
+            : PetBody.values.byName(json['body'] as String),
         species: PetSpecies.values.byName(json['species'] as String),
         color: PetColor.values.byName(json['color'] as String),
       );
