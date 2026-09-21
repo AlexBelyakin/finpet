@@ -5,7 +5,7 @@ import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/screens/glossary_screen.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
-import '../widgets/finni_pet.dart';
+import '../widgets/pet/finni_pet.dart';
 import '../widgets/shell.dart';
 
 class CreatePetScreen extends StatefulWidget {
