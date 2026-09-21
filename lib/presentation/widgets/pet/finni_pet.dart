@@ -86,6 +86,7 @@ class LivingPet extends StatelessWidget {
             child: RepaintBoundary(
               child: buildPetModel(
                 clip: clip,
+                body: look.body,
                 onOneShotFinished: onOneShotFinished,
               ),
             ),
@@ -142,6 +143,7 @@ class FinniPetView extends StatelessWidget {
             child: Text(
               pet.name,
               style: const TextStyle(
+                fontFamily: AppFonts.display,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.ink,
@@ -149,7 +151,7 @@ class FinniPetView extends StatelessWidget {
             ),
           ),
           Text(
-            '${pet.look.speciesLabel} · ${pet.stageLabel}',
+            '${pet.look.bodyLabel} · ${pet.stageLabel}',
             style: TextStyle(color: AppTheme.ink.withValues(alpha: 0.72)),
           ),
         ],
@@ -158,54 +160,3 @@ class FinniPetView extends StatelessWidget {
   }
 }
 
-class SpeciesChip extends StatelessWidget {
-  const SpeciesChip({
-    super.key,
-    required this.species,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final PetSpecies species;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final look = PetLook(species: species, color: PetColor.mint);
-    final icon = switch (species) {
-      PetSpecies.cat => Icons.pets_rounded,
-      PetSpecies.fox => Icons.cruelty_free_rounded,
-      PetSpecies.bird => Icons.flutter_dash_rounded,
-    };
-    return Material(
-      color: selected ? AppTheme.mint.withValues(alpha: 0.22) : AppTheme.card,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected ? AppTheme.mint : Colors.transparent,
-              width: 3,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 32, color: AppTheme.ink),
-              const SizedBox(height: 6),
-              Text(
-                look.speciesLabel,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

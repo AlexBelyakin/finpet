@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:finpet/app/pet_clips.dart';
+import 'package:finpet/domain/models.dart';
 
 class PetModelRuntime {
   PetModelRuntime._();
@@ -13,40 +14,53 @@ class PetModelRuntime {
 
   HttpServer? _server;
   String? baseUrl;
+  PetBody _body = PetBody.finni;
   final _bytes = <String, Uint8List>{};
   Uint8List? _viewerJs;
   Future<void>? _starting;
 
+  bool get _inTest => WidgetsBinding.instance.runtimeType
+      .toString()
+      .contains('TestWidgetsFlutterBinding');
+
   Future<void> start() {
-    if (WidgetsBinding.instance.runtimeType
-        .toString()
-        .contains('TestWidgetsFlutterBinding')) {
-      return Future.value();
-    }
+    if (_inTest) return Future.value();
     return _starting ??= _start();
   }
 
   Future<void> _start() async {
-    await _loadClip(PetClip.idleGood);
+    await _loadClip(PetClip.idleGood, PetBody.finni);
     _viewerJs = await _loadAsset(
       'packages/model_viewer_plus/assets/model-viewer.min.js',
     );
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     baseUrl = 'http://${_server!.address.address}:${_server!.port}/';
     _server!.listen(_onRequest);
-    unawaited(_warmRest());
   }
 
-  Future<void> _warmRest() async {
-    for (final clip in PetClip.values) {
-      await _loadClip(clip);
+  Future<void> ensureBody(PetBody body) async {
+    if (_inTest) {
+      _body = body;
+      return;
     }
+    await start();
+    _body = body;
+    await _loadClip(PetClip.idleGood, body);
+    unawaited(_warmRest(body));
   }
 
-  Future<void> _loadClip(PetClip clip) async {
-    final key = PetClips.fileKey(clip);
+  Future<void> _warmRest(PetBody body) async {
+    for (final clip in PetClip.values) {
+      if (_body != body) return;
+      await _loadClip(clip, body);
+    }
+    _bytes.removeWhere((key, _) => !key.startsWith('${body.name}/'));
+  }
+
+  Future<void> _loadClip(PetClip clip, PetBody body) async {
+    final key = PetClips.fileKey(clip, body);
     if (_bytes.containsKey(key)) return;
-    _bytes[key] = await _loadAsset(PetClips.asset(clip));
+    _bytes[key] = await _loadAsset(PetClips.asset(clip, body));
   }
 
   Future<Uint8List> _loadAsset(String path) async {
@@ -100,9 +114,13 @@ class PetModelRuntime {
   }
 
   Future<Uint8List?> _loadMissing(String key) async {
+    final parts = key.split('/');
+    if (parts.length != 2) return null;
+    final body = PetBody.values.asNameMap()[parts.first];
+    if (body == null) return null;
     for (final clip in PetClip.values) {
-      if (PetClips.fileKey(clip) == key) {
-        await _loadClip(clip);
+      if (PetClips.clipName(clip) == parts.last) {
+        await _loadClip(clip, body);
         return _bytes[key];
       }
     }
@@ -158,7 +176,7 @@ model-viewer {
 <body>
 <div id="stage">
   <model-viewer id="idle"
-    src="/clips/idle_good.glb"
+    src="/clips/finni/idle_good.glb"
     alt="Finni"
     autoplay
     shadow-intensity="0"
@@ -195,8 +213,18 @@ model-viewer {
 const idle = document.getElementById('idle');
 const action = document.getElementById('action');
 
+window.FinniBody = 'finni';
+
 function url(name) {
-  return '/clips/' + name + '.glb';
+  return '/clips/' + (window.FinniBody || 'finni') + '/' + name + '.glb';
+}
+
+function setBody(body) {
+  if (window.FinniBody === body) return;
+  window.FinniBody = body;
+  idle.dataset.clip = '';
+  action.dataset.clip = '';
+  action.loaded = false;
 }
 
 function showIdleLayer() {
@@ -255,7 +283,7 @@ action.addEventListener('finished', function () {
   try { FinniPet.postMessage('finished'); } catch (e) {}
 });
 
-window.Finni = { playIdle: playIdle, playAction: playAction, prepare: prepare };
+window.Finni = { setBody: setBody, playIdle: playIdle, playAction: playAction, prepare: prepare };
 customElements.whenDefined('model-viewer').then(function () {
   try { FinniPet.postMessage('ready'); } catch (e) {}
 });

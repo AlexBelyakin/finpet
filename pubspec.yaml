@@ -27,4 +27,24 @@ flutter:
     - assets/images/
     - assets/models/
     - assets/models/finni/
+    - assets/models/nori/
     - assets/audio/
+  fonts:
+    - family: PT Root UI
+      fonts:
+        - asset: assets/fonts/PT-Root-UI_Light.ttf
+          weight: 300
+        - asset: assets/fonts/PT-Root-UI_Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PT-Root-UI_Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PT-Root-UI_Bold.ttf
+          weight: 700
+    - family: Golos UI
+      fonts:
+        - asset: assets/fonts/Golos-UI_Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Golos-UI_Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Golos-UI_Bold.ttf
+          weight: 700

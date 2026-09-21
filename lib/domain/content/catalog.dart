@@ -5,18 +5,16 @@ abstract final class Catalog {
   static const periodIncome = 80;
 
   static const looks = [
-    PetLook(species: PetSpecies.cat, color: PetColor.peach),
-    PetLook(species: PetSpecies.cat, color: PetColor.mint),
-    PetLook(species: PetSpecies.cat, color: PetColor.sky),
-    PetLook(species: PetSpecies.cat, color: PetColor.wave),
-    PetLook(species: PetSpecies.fox, color: PetColor.peach),
-    PetLook(species: PetSpecies.fox, color: PetColor.mint),
-    PetLook(species: PetSpecies.fox, color: PetColor.sky),
-    PetLook(species: PetSpecies.fox, color: PetColor.wave),
-    PetLook(species: PetSpecies.bird, color: PetColor.peach),
-    PetLook(species: PetSpecies.bird, color: PetColor.mint),
-    PetLook(species: PetSpecies.bird, color: PetColor.sky),
-    PetLook(species: PetSpecies.bird, color: PetColor.wave),
+    PetLook(
+      body: PetBody.finni,
+      species: PetSpecies.cat,
+      color: PetColor.peach,
+    ),
+    PetLook(
+      body: PetBody.nori,
+      species: PetSpecies.fox,
+      color: PetColor.mint,
+    ),
   ];
 
   static const shop = [
