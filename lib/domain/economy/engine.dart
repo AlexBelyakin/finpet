@@ -4,7 +4,57 @@ import 'package:finpet/domain/models.dart';
 abstract final class Economy {
   static const minNeedForPeriod = 15;
 
+  /// Сытость −1 раз в 5 часов, настроение −1 раз в 8.
+  /// За ночь 8–12 ч уходит 1–2 сытости и 1 настроение — утром ещё в порядке.
+  static const satietyHoursPerPoint = 5;
+  static const moodHoursPerPoint = 8;
+
   static int clampStat(int value) => value.clamp(15, 100);
+
+  static GameProfile settleNeeds(GameProfile profile, {DateTime? now}) {
+    final pet = profile.pet;
+    final at = now ?? DateTime.now();
+    if (pet == null) {
+      return profile.needsAt == null
+          ? profile
+          : profile.copyWith(clearNeedsAt: true);
+    }
+    final raw = profile.needsAt;
+    if (raw == null || raw.isEmpty) {
+      return profile.copyWith(needsAt: at.toIso8601String());
+    }
+    final from = DateTime.tryParse(raw);
+    if (from == null || at.isBefore(from)) {
+      return profile.copyWith(needsAt: at.toIso8601String());
+    }
+    final hours = at.difference(from).inHours;
+    final satietyDrop = hours ~/ satietyHoursPerPoint;
+    final moodDrop = hours ~/ moodHoursPerPoint;
+    if (satietyDrop == 0 && moodDrop == 0) return profile;
+
+    var consumed = 0;
+    if (satietyDrop > 0) consumed = satietyDrop * satietyHoursPerPoint;
+    if (moodDrop > 0) {
+      final moodHours = moodDrop * moodHoursPerPoint;
+      if (moodHours > consumed) consumed = moodHours;
+    }
+
+    final satiety = clampStat(pet.satiety - satietyDrop);
+    final mood = clampStat(pet.mood - moodDrop);
+    var reason = pet.moodReason;
+    if (satiety < 45) {
+      reason = '${pet.name} проголодался. Загляни в нужное в магазине.';
+    } else if (mood < 55) {
+      reason = '${pet.name} скучает. Можно поиграть или купить что-то приятное.';
+    } else if (satietyDrop >= 2 || moodDrop >= 2) {
+      reason = '${pet.name} чуть проголодался — это нормально.';
+    }
+
+    return profile.copyWith(
+      pet: pet.copyWith(satiety: satiety, mood: mood, moodReason: reason),
+      needsAt: from.add(Duration(hours: consumed)).toIso8601String(),
+    );
+  }
 
   static int stageFor(int growth) {
     if (growth >= 6) return 3;
@@ -50,6 +100,7 @@ abstract final class Economy {
       seenIntro: true,
       demoMode: true,
       pet: pet,
+      needsAt: DateTime.now().toIso8601String(),
       coins: Catalog.startIncome,
       savings: 0,
       goalId: Catalog.goals.first.id,

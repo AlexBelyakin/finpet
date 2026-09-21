@@ -1,6 +1,8 @@
+import 'package:finpet/app/home_hints.dart';
 import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/domain/models.dart';
+import 'package:finpet/presentation/widgets/common.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -38,5 +40,27 @@ void main() {
       PetClips.asset(PetClip.idleGood, PetBody.nori),
       'assets/models/nori/idle_good.glb',
     );
+  });
+
+  test('подсказки дома покрывают значки', () {
+    expect(HomeHints.steps.length, 6);
+    expect(HomeHints.steps.first.title, 'Это твой дом');
+  });
+
+  test('после задания хвалят и за успех, и за попытку', () {
+    expect(
+      taskPraiseTitle(good: true, taskId: 't1'),
+      isIn(['Молодец!', 'Так держать!', 'Супер!', 'Умница!', 'Отлично!']),
+    );
+    expect(
+      taskPraiseTitle(good: false, taskId: 't1'),
+      isIn(['Ты справился!', 'Хорошая попытка!', 'Есть прогресс!']),
+    );
+  });
+
+  test('в прогреве только частые клипы, не все 15', () {
+    expect(PetClips.warmClips, contains(PetClip.idleGood));
+    expect(PetClips.warmClips, contains(PetClip.reactJoy));
+    expect(PetClips.warmClips.length, lessThan(PetClip.values.length));
   });
 }

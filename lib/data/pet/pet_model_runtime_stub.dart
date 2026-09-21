@@ -1,3 +1,4 @@
+import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/domain/models.dart';
 
 class PetModelRuntime {
@@ -8,5 +9,7 @@ class PetModelRuntime {
 
   Future<void> start() async {}
 
-  Future<void> ensureBody(PetBody body) async {}
+  Future<void> ensureBody(PetBody body, {PetClip? idle}) async {}
+
+  Future<void> prefetch(PetClip clip) async {}
 }
