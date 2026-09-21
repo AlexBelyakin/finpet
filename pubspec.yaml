@@ -24,7 +24,22 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
+    - assets/images/logo_finni.jpg
+    - assets/images/fon_zagruzki_fast.jpg
+    - assets/images/fon_zagruzki_planshet_fast.jpg
+    - assets/images/bg_splash.jpg
+    - assets/images/bg_room_morning.jpg
+    - assets/images/bg_room_evening.jpg
+    - assets/images/bg_room_night.jpg
+    - assets/images/bg_room_morning_planshet.jpg
+    - assets/images/bg_room_evening_planshet.jpg
+    - assets/images/bg_room_night_planshet.jpg
+    - assets/images/room2_morning.jpg
+    - assets/images/room2_evening.jpg
+    - assets/images/room2_night.jpg
+    - assets/images/room2_morning_planshet.jpg
+    - assets/images/room2_evening_planshet.jpg
+    - assets/images/room2_night_planshet.jpg
     - assets/models/
     - assets/models/finni/
     - assets/models/nori/

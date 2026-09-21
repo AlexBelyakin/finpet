@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:finpet/app/assets.dart';
+import 'package:finpet/app/day_period.dart';
 import 'package:finpet/app/layout.dart';
 import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/app/theme/app_theme.dart';
@@ -6,27 +9,110 @@ import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/widgets/pet/finni_model_view.dart';
 import 'package:flutter/material.dart';
 
-class RoomBackground extends StatelessWidget {
+class RoomBackground extends StatefulWidget {
   const RoomBackground({
     super.key,
     required this.child,
+    this.place = PetPlace.room,
     this.alignment,
   });
 
   final Widget child;
+  final PetPlace place;
   final AlignmentGeometry? alignment;
 
   @override
+  State<RoomBackground> createState() => _RoomBackgroundState();
+}
+
+class _RoomBackgroundState extends State<RoomBackground>
+    with WidgetsBindingObserver {
+  Timer? _tick;
+  late RoomDaytime _period;
+
+  @override
+  void initState() {
+    super.initState();
+    _period = RoomDaytimes.of(DateTime.now());
+    WidgetsBinding.instance.addObserver(this);
+    _tick = Timer.periodic(const Duration(seconds: 30), (_) => _syncPeriod());
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _syncPeriod();
+  }
+
+  void _syncPeriod() {
+    final next = RoomDaytimes.of(DateTime.now());
+    if (next == _period || !mounted) return;
+    setState(() => _period = next);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: const AssetImage(AppAssets.bgRoom),
-          fit: BoxFit.cover,
-          alignment: alignment ?? AppLayout.roomFocus(context),
+    final tablet = AppLayout.isTablet(context);
+    final asset = AppAssets.placeBackdrop(
+      place: widget.place,
+      period: _period,
+      tablet: tablet,
+    );
+    final fallback = AppAssets.placeBackdrop(
+      place: PetPlace.room,
+      period: _period,
+      tablet: tablet,
+    );
+    final align = widget.alignment ?? AppLayout.roomFocus(context);
+    final cacheW = AppLayout.imageCacheWidth(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 700),
+          child: SizedBox.expand(
+            key: ValueKey(asset),
+            child: Image.asset(
+              asset,
+              fit: BoxFit.cover,
+              alignment: align,
+              cacheWidth: cacheW,
+              filterQuality: FilterQuality.medium,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stack) {
+                return Image.asset(
+                  fallback == asset ? AppAssets.bgRoom : fallback,
+                  fit: BoxFit.cover,
+                  alignment: align,
+                  width: double.infinity,
+                  height: double.infinity,
+                  cacheWidth: cacheW,
+                  filterQuality: FilterQuality.medium,
+                  gaplessPlayback: true,
+                  errorBuilder: (context, error, stack) {
+                    return Image.asset(
+                      AppAssets.bgRoom,
+                      fit: BoxFit.cover,
+                      alignment: align,
+                      width: double.infinity,
+                      height: double.infinity,
+                      cacheWidth: cacheW,
+                      filterQuality: FilterQuality.medium,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ),
-      ),
-      child: child,
+        widget.child,
+      ],
     );
   }
 }
@@ -38,14 +124,18 @@ class SplashBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(AppAssets.bgSplash),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          AppAssets.bgSplash,
           fit: BoxFit.cover,
+          cacheWidth: AppLayout.imageCacheWidth(context),
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
         ),
-      ),
-      child: child,
+        child,
+      ],
     );
   }
 }

@@ -4,6 +4,21 @@ enum PetSpecies { cat, fox, bird }
 
 enum PetColor { peach, mint, sky, wave }
 
+enum PetPlace {
+  room,
+  room2;
+
+  String get label => switch (this) {
+        PetPlace.room => 'Теремок на лужайке',
+        PetPlace.room2 => 'Усадьба у сада',
+      };
+
+  String get blurb => switch (this) {
+        PetPlace.room => 'Маленький домик среди холмов. Здесь тепло и спокойно.',
+        PetPlace.room2 => 'Светлый дом рядом с тихим садом.',
+      };
+}
+
 enum PeriodPhase { planning, active, review }
 
 enum ExpenseKind { need, want }
@@ -317,8 +332,10 @@ class GameProfile {
   const GameProfile({
     required this.playerName,
     required this.seenIntro,
+    this.seenHomeHints = false,
     required this.demoMode,
     this.pet,
+    this.place,
     required this.coins,
     required this.savings,
     this.goalId,
@@ -335,12 +352,15 @@ class GameProfile {
     required this.lastNextStep,
     this.gamesPlayed = 0,
     this.minigameCoinsThisPeriod = 0,
+    this.needsAt,
   });
 
   final String playerName;
   final bool seenIntro;
+  final bool seenHomeHints;
   final bool demoMode;
   final Pet? pet;
+  final PetPlace? place;
   final int coins;
   final int savings;
   final String? goalId;
@@ -357,6 +377,15 @@ class GameProfile {
   final String lastNextStep;
   final int gamesPlayed;
   final int minigameCoinsThisPeriod;
+  /// Когда в последний раз учли убывание сытости и настроения.
+  final String? needsAt;
+
+  static const room2TasksNeeded = 5;
+
+  bool get room2Unlocked => doneTaskIds.length >= room2TasksNeeded;
+
+  bool canUsePlace(PetPlace place) =>
+      place == PetPlace.room || room2Unlocked;
 
   static GameProfile empty() {
     return const GameProfile(
@@ -385,7 +414,10 @@ class GameProfile {
     bool? seenIntro,
     bool? demoMode,
     Pet? pet,
+    bool? seenHomeHints,
     bool clearPet = false,
+    PetPlace? place,
+    bool clearPlace = false,
     int? coins,
     int? savings,
     String? goalId,
@@ -404,12 +436,16 @@ class GameProfile {
     String? lastNextStep,
     int? gamesPlayed,
     int? minigameCoinsThisPeriod,
+    String? needsAt,
+    bool clearNeedsAt = false,
   }) {
     return GameProfile(
       playerName: playerName ?? this.playerName,
       seenIntro: seenIntro ?? this.seenIntro,
+      seenHomeHints: seenHomeHints ?? this.seenHomeHints,
       demoMode: demoMode ?? this.demoMode,
       pet: clearPet ? null : (pet ?? this.pet),
+      place: clearPlace ? null : (place ?? this.place),
       coins: coins ?? this.coins,
       savings: savings ?? this.savings,
       goalId: clearGoal ? null : (goalId ?? this.goalId),
@@ -427,6 +463,7 @@ class GameProfile {
       gamesPlayed: gamesPlayed ?? this.gamesPlayed,
       minigameCoinsThisPeriod:
           minigameCoinsThisPeriod ?? this.minigameCoinsThisPeriod,
+      needsAt: clearNeedsAt ? null : (needsAt ?? this.needsAt),
     );
   }
 
@@ -435,6 +472,8 @@ class GameProfile {
         'seenIntro': seenIntro,
         'demoMode': demoMode,
         'pet': pet?.toJson(),
+        'seenHomeHints': seenHomeHints,
+        'place': place?.name,
         'coins': coins,
         'savings': savings,
         'goalId': goalId,
@@ -451,16 +490,19 @@ class GameProfile {
         'lastNextStep': lastNextStep,
         'gamesPlayed': gamesPlayed,
         'minigameCoinsThisPeriod': minigameCoinsThisPeriod,
+        'needsAt': needsAt,
       };
 
   factory GameProfile.fromJson(Map<String, dynamic> json) {
     return GameProfile(
       playerName: json['playerName'] as String? ?? '',
       seenIntro: json['seenIntro'] as bool? ?? false,
+      seenHomeHints: json['seenHomeHints'] as bool? ?? json['pet'] != null,
       demoMode: json['demoMode'] as bool? ?? true,
       pet: json['pet'] == null
           ? null
           : Pet.fromJson(json['pet'] as Map<String, dynamic>),
+      place: _placeFromJson(json),
       coins: json['coins'] as int? ?? 0,
       savings: json['savings'] as int? ?? 0,
       goalId: json['goalId'] as String?,
@@ -485,8 +527,21 @@ class GameProfile {
       lastNextStep: json['lastNextStep'] as String? ?? '',
       gamesPlayed: json['gamesPlayed'] as int? ?? 0,
       minigameCoinsThisPeriod: json['minigameCoinsThisPeriod'] as int? ?? 0,
+      needsAt: json['needsAt'] as String?,
     );
   }
+}
+
+PetPlace? _placeFromJson(Map<String, dynamic> json) {
+  final raw = json['place'] as String?;
+  if (raw != null) {
+    if (raw == 'yard' || raw == 'room2') return PetPlace.room2;
+    for (final value in PetPlace.values) {
+      if (value.name == raw) return value;
+    }
+  }
+  if (json['pet'] != null) return PetPlace.room;
+  return null;
 }
 
 class EngineResult {
