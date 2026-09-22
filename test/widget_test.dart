@@ -19,5 +19,6 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.textContaining('Привет! Это игра'), findsOneWidget);
     expect(find.text('Играть!'), findsOneWidget);
+    controller.dispose(); 
   });
 }
