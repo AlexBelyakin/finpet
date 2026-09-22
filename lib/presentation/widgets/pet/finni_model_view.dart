@@ -16,3 +16,10 @@ Widget buildPetModel({
     onOneShotFinished: onOneShotFinished,
   );
 }
+
+Future<void> preparePetViewer() => preparePetViewerImpl();
+
+Future<void> primePetViewer(PetClip clip, PetBody body) =>
+    primePetViewerImpl(clip, body);
+
+Widget? petViewerWarmup() => petViewerWarmupImpl();

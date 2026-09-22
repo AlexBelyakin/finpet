@@ -93,4 +93,12 @@ abstract final class PetClips {
         2 => PetClip.stageTeen,
         _ => PetClip.stageAdult,
       };
+
+  /// То, что держим в RAM до первого действия: три idle и частая реакция.
+  static const warmClips = <PetClip>[
+    PetClip.idleGood,
+    PetClip.idleThoughtful,
+    PetClip.idleNeeds,
+    PetClip.reactJoy,
+  ];
 }

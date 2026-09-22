@@ -138,6 +138,126 @@ abstract final class Catalog {
       satietyDelta: 0,
       moodDelta: 14,
     ),
+    ShopItem(
+      id: 'n7',
+      name: 'Лекарство',
+      price: 24,
+      kind: ExpenseKind.need,
+      emoji: '🩹',
+      effectLabel: 'Если питомцу нездоровится',
+      satietyDelta: 6,
+      moodDelta: 8,
+    ),
+    ShopItem(
+      id: 'n8',
+      name: 'Наполнитель',
+      price: 16,
+      kind: ExpenseKind.need,
+      emoji: '📦',
+      effectLabel: 'Чисто и спокойно дома',
+      satietyDelta: 0,
+      moodDelta: 7,
+    ),
+    ShopItem(
+      id: 'n9',
+      name: 'Тёплая накидка',
+      price: 20,
+      kind: ExpenseKind.need,
+      emoji: '🧣',
+      effectLabel: 'Не замёрзнуть вечером',
+      satietyDelta: 0,
+      moodDelta: 10,
+    ),
+    ShopItem(
+      id: 'n10',
+      name: 'Зубная щётка',
+      price: 11,
+      kind: ExpenseKind.need,
+      emoji: '🪥',
+      effectLabel: 'Уход за собой',
+      satietyDelta: 0,
+      moodDelta: 6,
+    ),
+    ShopItem(
+      id: 'n11',
+      name: 'Миска',
+      price: 14,
+      kind: ExpenseKind.need,
+      emoji: '🍽️',
+      effectLabel: 'Удобно есть и пить',
+      satietyDelta: 4,
+      moodDelta: 5,
+    ),
+    ShopItem(
+      id: 'n12',
+      name: 'Поводок',
+      price: 18,
+      kind: ExpenseKind.need,
+      emoji: '🦮',
+      effectLabel: 'Безопасная прогулка',
+      satietyDelta: 3,
+      moodDelta: 8,
+    ),
+    ShopItem(
+      id: 'w7',
+      name: 'Краски',
+      price: 26,
+      kind: ExpenseKind.want,
+      emoji: '🎨',
+      effectLabel: 'Рисовать и радоваться',
+      satietyDelta: 0,
+      moodDelta: 15,
+    ),
+    ShopItem(
+      id: 'w8',
+      name: 'Пазл',
+      price: 32,
+      kind: ExpenseKind.want,
+      emoji: '🧩',
+      effectLabel: 'Долгая тихая игра',
+      satietyDelta: 0,
+      moodDelta: 17,
+    ),
+    ShopItem(
+      id: 'w9',
+      name: 'Мороженое',
+      price: 20,
+      kind: ExpenseKind.want,
+      emoji: '🍦',
+      effectLabel: 'Сладко, но не вместо еды',
+      satietyDelta: 5,
+      moodDelta: 12,
+    ),
+    ShopItem(
+      id: 'w10',
+      name: 'Барабан',
+      price: 38,
+      kind: ExpenseKind.want,
+      emoji: '🥁',
+      effectLabel: 'Шумно и весело',
+      satietyDelta: 0,
+      moodDelta: 18,
+    ),
+    ShopItem(
+      id: 'w11',
+      name: 'Наклейки',
+      price: 15,
+      kind: ExpenseKind.want,
+      emoji: '🌟',
+      effectLabel: 'Маленькая радость',
+      satietyDelta: 0,
+      moodDelta: 10,
+    ),
+    ShopItem(
+      id: 'w12',
+      name: 'Фонарик',
+      price: 24,
+      kind: ExpenseKind.want,
+      emoji: '🔦',
+      effectLabel: 'Играть в исследователя',
+      satietyDelta: 0,
+      moodDelta: 11,
+    ),
   ];
 
   static const goals = [
@@ -145,6 +265,8 @@ abstract final class Catalog {
     GoalDef(id: 'g2', title: 'Костюм героя', cost: 260, emoji: '🦸'),
     GoalDef(id: 'g3', title: 'Запас лакомств', cost: 340, emoji: '🍬'),
     GoalDef(id: 'g4', title: 'Самокат', cost: 420, emoji: '🛴'),
+    GoalDef(id: 'g5', title: 'Палатка во дворе', cost: 300, emoji: '⛺'),
+    GoalDef(id: 'g6', title: 'Велосипед', cost: 500, emoji: '🚲'),
   ];
 
   static const tasks = [
@@ -362,6 +484,206 @@ abstract final class Catalog {
           'Подарок тоже можно планировать: часть себе сейчас, часть — будущей цели.',
       explainOther:
           'Если всё уйдёт в желаемое, цель почти не двинется. Попробуй отложить хотя бы 15.',
+    ),
+    TaskDef(
+      id: 't10',
+      theme: TaskTheme.budget,
+      type: TaskType.choice,
+      title: 'Обед или игра в телефоне',
+      story:
+          'На счету 25 монет. Обед стоит 18, новая игра — 25. До вечера ещё далеко. Что выбрать?',
+      reward: 18,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Обед сейчас, игру — когда будут лишние монеты',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'Игру сразу: поесть можно потом как-нибудь',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Потратить всё на обед и ещё на сладость в долг',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Еда — нужное. Игру можно подождать. Так ты не остаёшься голодным из‑за желания.',
+      explainOther:
+          'Игра не кормит. Если потратить всё на неё, на обед не хватит — это слабый план.',
+    ),
+    TaskDef(
+      id: 't11',
+      theme: TaskTheme.savings,
+      type: TaskType.allocate,
+      title: 'Нашёл 25 монет',
+      story:
+          'На прогулке нашлось 25 монет. Их не ждали. Разложи: нужное, желаемое и копилка.',
+      reward: 20,
+      allocateTotal: 25,
+      minNeed: 5,
+      minSave: 10,
+      explainGood:
+          'Нежданные деньги легко «сжечь». Часть в копилку — и находка работает на цель.',
+      explainOther:
+          'Если всё уйдёт в желаемое, находка исчезнет за минуту. Отложи хотя бы 10.',
+    ),
+    TaskDef(
+      id: 't12',
+      theme: TaskTheme.purchases,
+      type: TaskType.choice,
+      title: 'Три цены на воду',
+      story:
+          'Одинаковая вода: 8, 12 и 15 монет. Жажда есть, лишних денег мало. Что взять?',
+      reward: 16,
+      options: [
+        TaskOption(id: 'a', label: 'За 8: та же вода, больше останется', good: true),
+        TaskOption(id: 'b', label: 'За 15: бутылка блестит сильнее', good: false),
+        TaskOption(id: 'c', label: 'Купить все три «на запас»', good: false),
+      ],
+      explainGood:
+          'Сравнивать три ценника полезнее, чем два. Нужное можно закрыть дешевле.',
+      explainOther:
+          'Блеск не делает воду лучше. Три бутылки сразу — это уже лишнее, не жажда.',
+    ),
+    TaskDef(
+      id: 't13',
+      theme: TaskTheme.budget,
+      type: TaskType.choice,
+      title: 'Сломалась расчёска',
+      story:
+          'Расчёска сломалась. Простая стоит 12, с блёстками — 40. На счету 45, в плане — корм.',
+      reward: 18,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Простую: уход нужен, блёстки подождут',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'С блёстками, корм перенесём',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Купить обе, чтобы выбрать дома',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Нужное закрывают простой вещью. Красивая доплата — уже желаемое.',
+      explainOther:
+          'Блёстки не расчёсывают лучше. Если из‑за них не хватит на корм, план сломан.',
+    ),
+    TaskDef(
+      id: 't14',
+      theme: TaskTheme.savings,
+      type: TaskType.choice,
+      title: 'Почти накопил',
+      story:
+          'До цели осталось 20 монет. Друг зовёт на двоих за мороженое за 22. Как быть?',
+      reward: 22,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Докопить цель, мороженое — на следующей неделе',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'Снять копилку: цель и так почти готова',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Купить мороженое в долг у друга',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Когда цель рядом, её легко бросить «на чуть-чуть». Лучше дойти и потом гулять.',
+      explainOther:
+          '«Почти» — не «уже». Снять копилку или занять — цель снова далеко.',
+    ),
+    TaskDef(
+      id: 't15',
+      theme: TaskTheme.purchases,
+      type: TaskType.allocate,
+      title: 'День на рынке',
+      story:
+          'На рынке 35 монет. Нужны фрукты, хочется сладость, копилка ждёт. Разложи сумму.',
+      reward: 20,
+      allocateTotal: 35,
+      minNeed: 12,
+      minSave: 8,
+      explainGood:
+          'На рынке легко схватить всё подряд. Ты оставил и еду, и запас.',
+      explainOther:
+          'Яркие прилавки толкают к желаемому. Без нужного и копилки день на рынке пустой.',
+    ),
+    TaskDef(
+      id: 't16',
+      theme: TaskTheme.budget,
+      type: TaskType.choice,
+      title: '«Каждую неделю само»',
+      story:
+          'Приложение предлагает стикеры за 10 монет каждую неделю сами. Ты не просил. Что сделать?',
+      reward: 19,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Отказаться: это незапланированный расход',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'Включить: «всего десять, само спишется»',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Включить два набора, вдруг пригодится',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Повторный платёж легко забыть. Если его не было в плане — лучше не включать.',
+      explainOther:
+          '«Само» значит: каждую неделю без спроса. Маленькая сумма копится в большую дыру.',
+    ),
+    TaskDef(
+      id: 't17',
+      theme: TaskTheme.purchases,
+      type: TaskType.choice,
+      title: 'Старая игрушка или новая',
+      story:
+          'Старый мячик ещё прыгает. Новый стоит 40 и блестит в витрине. Копилка на самокат.',
+      reward: 17,
+      options: [
+        TaskOption(
+          id: 'a',
+          label: 'Играть старым, новый — когда будет цель или лишнее',
+          good: true,
+        ),
+        TaskOption(
+          id: 'b',
+          label: 'Купить новый: старый «уже не модный»',
+          good: false,
+        ),
+        TaskOption(
+          id: 'c',
+          label: 'Купить новый и выбросить старый сразу',
+          good: false,
+        ),
+      ],
+      explainGood:
+          'Если вещь ещё служит, покупка — желание, не нужда. Самокат важнее блеска.',
+      explainOther:
+          'Модность не чинит мячик. Выбросить рабочее и купить новое бьёт по цели.',
     ),
   ];
 

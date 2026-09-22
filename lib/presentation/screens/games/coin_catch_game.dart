@@ -2,12 +2,28 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/presentation/screens/games/game_ui.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/common.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
+
+class _Token {
+  _Token({
+    required this.id,
+    required this.dot,
+    required this.kind,
+  });
+
+  final int id;
+  final CatchDot dot;
+  final _TokenKind kind;
+}
+
+enum _TokenKind { coin, gem, spend }
 
 class CoinCatchGameScreen extends StatefulWidget {
   const CoinCatchGameScreen({super.key, required this.controller});
@@ -18,64 +34,92 @@ class CoinCatchGameScreen extends StatefulWidget {
   State<CoinCatchGameScreen> createState() => _CoinCatchGameScreenState();
 }
 
-enum _TokenKind { coin, gem, spend }
-
-class _Token {
-  _Token({
-    required this.id,
-    required this.x,
-    required this.y,
-    required this.kind,
-  });
-
-  final int id;
-  final double x;
-  double y;
-  final _TokenKind kind;
-}
-
-class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
+class _CoinCatchGameScreenState extends State<CoinCatchGameScreen>
+    with SingleTickerProviderStateMixin {
   static const _duration = 25;
+  static const _maxTokens = 10;
+  static const _spawnEvery = 0.72;
+  static const _fall = 0.44;
 
   final _rng = Random();
   final _tokens = <_Token>[];
-  Timer? _spawn;
-  Timer? _tick;
-  Timer? _clock;
+  final _dots = <CatchDot>[];
+  final _ticks = ValueNotifier(0);
+  final _scoreN = ValueNotifier(0);
+  final _timeN = ValueNotifier(_duration);
+
+  late final Ticker _ticker;
+  Timer? _hintTimer;
+  Duration _last = Duration.zero;
+  double _spawnAcc = 0;
+  double _clockAcc = 0;
   int _id = 1;
-  int _score = 0;
-  int _time = _duration;
   bool _running = false;
   bool _done = false;
   bool _paid = false;
+  String? _hint;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick);
+  }
 
   @override
   void dispose() {
-    _stopTimers();
+    _ticker.dispose();
+    _hintTimer?.cancel();
+    _ticks.dispose();
+    _scoreN.dispose();
+    _timeN.dispose();
     super.dispose();
   }
 
-  void _stopTimers() {
-    _spawn?.cancel();
-    _tick?.cancel();
-    _clock?.cancel();
-    _spawn = null;
-    _tick = null;
-    _clock = null;
-  }
-
   void _start() {
-    _stopTimers();
+    _ticker.stop();
+    _hintTimer?.cancel();
+    _tokens.clear();
+    _dots.clear();
+    _last = Duration.zero;
+    _spawnAcc = 0;
+    _clockAcc = 0;
+    _scoreN.value = 0;
+    _timeN.value = _duration;
     setState(() {
-      _tokens.clear();
-      _score = 0;
-      _time = _duration;
       _running = true;
       _done = false;
       _paid = false;
+      _hint = null;
     });
-    _spawn = Timer.periodic(const Duration(milliseconds: 620), (_) {
-      if (!mounted || !_running) return;
+    _ticker.start();
+  }
+
+  void _onTick(Duration elapsed) {
+    if (!_running) return;
+    var dt = _last == Duration.zero
+        ? 0.0
+        : (elapsed - _last).inMicroseconds / 1e6;
+    _last = elapsed;
+    if (dt <= 0) return;
+    if (dt > 0.05) dt = 0.05;
+
+    final live = <_Token>[];
+    _dots.clear();
+    final fall = _fall * dt;
+    for (final token in _tokens) {
+      token.dot.y += fall;
+      if (token.dot.y <= 1.12) {
+        live.add(token);
+        _dots.add(token.dot);
+      }
+    }
+    _tokens
+      ..clear()
+      ..addAll(live);
+
+    _spawnAcc += dt;
+    if (_spawnAcc >= _spawnEvery && _tokens.length < _maxTokens) {
+      _spawnAcc = 0;
       final r = _rng.nextDouble();
       final kind = r > 0.82
           ? _TokenKind.gem
@@ -84,37 +128,45 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
               : _TokenKind.coin;
       final token = _Token(
         id: _id++,
-        x: 0.08 + _rng.nextDouble() * 0.78,
-        y: -0.08,
         kind: kind,
+        dot: CatchDot(
+          x: 0.08 + _rng.nextDouble() * 0.78,
+          y: -0.08,
+          fill: switch (kind) {
+            _TokenKind.gem => AppTheme.sky,
+            _TokenKind.spend => const Color(0xFFE36A8A),
+            _TokenKind.coin => const Color(0xFFE8B84A),
+          },
+          mark: switch (kind) {
+            _TokenKind.gem => CatchMark.gem,
+            _TokenKind.spend => CatchMark.spend,
+            _TokenKind.coin => CatchMark.coin,
+          },
+        ),
       );
-      setState(() => _tokens.add(token));
-    });
-    _tick = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      if (!mounted || !_running) return;
-      setState(() {
-        for (final token in _tokens) {
-          token.y += 0.022;
-        }
-        _tokens.removeWhere((e) => e.y > 1.12);
-      });
-    });
-    _clock = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || !_running) return;
-      if (_time <= 1) {
+      _tokens.add(token);
+      _dots.add(token.dot);
+    }
+
+    _clockAcc += dt;
+    if (_clockAcc >= 1) {
+      _clockAcc -= 1;
+      _timeN.value -= 1;
+      if (_timeN.value <= 0) {
         _finish();
         return;
       }
-      setState(() => _time -= 1);
-    });
+    }
+    _ticks.value++;
   }
 
   Future<void> _finish() async {
-    _stopTimers();
-    final reward = min(80, _score * 2);
+    _ticker.stop();
+    final reward = min(80, _scoreN.value * 2);
     setState(() {
       _running = false;
       _tokens.clear();
+      _dots.clear();
       _done = true;
     });
     if (!_paid) {
@@ -126,60 +178,52 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
     }
   }
 
-  void _tap(_Token token) {
-    setState(() {
-      _tokens.removeWhere((e) => e.id == token.id);
-      final delta = switch (token.kind) {
-        _TokenKind.gem => 3,
-        _TokenKind.spend => -2,
-        _TokenKind.coin => 1,
-      };
-      _score = max(0, _score + delta);
-    });
+  void _tapAt(Offset local, Size size) {
+    _Token? hit;
+    var best = 32.0 * 32.0;
+    for (final token in _tokens) {
+      final dx = token.dot.x * size.width - local.dx;
+      final dy = token.dot.y * size.height - local.dy;
+      final d2 = dx * dx + dy * dy;
+      if (d2 <= best) {
+        best = d2;
+        hit = token;
+      }
+    }
+    if (hit == null) return;
+    _tokens.remove(hit);
+    _dots.remove(hit.dot);
+    final delta = switch (hit.kind) {
+      _TokenKind.gem => 3,
+      _TokenKind.spend => -2,
+      _TokenKind.coin => 1,
+    };
+    _scoreN.value = max(0, _scoreN.value + delta);
+    _ticks.value++;
+    if (hit.kind == _TokenKind.spend) {
+      _showHint(
+        'Это лишняя трата, не монета. Такие лучше не ловить — очки уходят.',
+      );
+    }
   }
 
-  Widget _tokenView(_TokenKind kind) {
-    final color = switch (kind) {
-      _TokenKind.gem => AppTheme.sky,
-      _TokenKind.spend => const Color(0xFFE36A8A),
-      _TokenKind.coin => const Color(0xFFE8B84A),
-    };
-    return CircleAvatar(
-      radius: 24,
-      backgroundColor: color,
-      child: Icon(
-        kind == _TokenKind.gem ? Icons.diamond_rounded : FinniIcons.coins,
-        color: Colors.white,
-        size: 26,
-      ),
-    );
+  void _showHint(String text) {
+    _hintTimer?.cancel();
+    setState(() => _hint = text);
+    _hintTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _hint = null);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (_done) {
-      return FinniScaffold(
+      return GameResultBody(
         title: 'Лови монетки',
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🏆', style: TextStyle(fontSize: 64)),
-              const SizedBox(height: 8),
-              Text('Собрано очков: $_score',
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text('+${min(80, _score * 2)} монет'),
-              const SizedBox(height: 20),
-              FilledButton(onPressed: _start, child: const Text('Ещё раз')),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Готово'),
-              ),
-            ],
-          ),
-        ),
+        scoreLine: 'Собрано очков: ${_scoreN.value}',
+        coinsLine: '+${min(80, _scoreN.value * 2)} монет',
+        onAgain: _start,
+        onDone: () => Navigator.pop(context),
       );
     }
 
@@ -192,8 +236,13 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(FinniIcons.coins, size: 72, color: Color(0xFFE8B84A)),
-                const SizedBox(height: 12),
+                const CircleGlyph(
+                  icon: FinniIcons.coins,
+                  color: Color(0xFFE8B84A),
+                  size: 96,
+                  iconSize: 48,
+                ),
+                const SizedBox(height: 16),
                 Text(
                   'Тапай монеты и алмазы. Не трогай купюры — это лишние траты.',
                   textAlign: TextAlign.center,
@@ -214,45 +263,46 @@ class _CoinCatchGameScreenState extends State<CoinCatchGameScreen> {
         children: [
           Row(
             children: [
-              Chip(
-                backgroundColor: AppTheme.peach.withValues(alpha: 0.35),
-                label: Text('Очки: $_score'),
+              ValueListenableBuilder(
+                valueListenable: _scoreN,
+                builder: (_, score, _) => Chip(
+                  backgroundColor: AppTheme.peach.withValues(alpha: 0.35),
+                  label: Text('Очки: $score'),
+                ),
               ),
               const Spacer(),
-              Chip(
-                backgroundColor: AppTheme.sky.withValues(alpha: 0.4),
-                label: Text('$_time с'),
+              ValueListenableBuilder(
+                valueListenable: _timeN,
+                builder: (_, time, _) => Chip(
+                  backgroundColor: AppTheme.sky.withValues(alpha: 0.4),
+                  label: Text('$time с'),
+                ),
               ),
             ],
           ),
+          if (_hint != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _hint!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
           const SizedBox(height: 8),
           Expanded(
             child: LayoutBuilder(
               builder: (context, box) {
-                final h = box.maxHeight;
+                final size = Size(box.maxWidth, box.maxHeight);
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(28),
-                  child: SoftPlayField(
-                    child: Stack(
-                      children: [
-                        for (final token in _tokens)
-                          Positioned(
-                            left: token.x * box.maxWidth - 28,
-                            top: token.y * h - 28,
-                            child: GestureDetector(
-                              onTapDown: (_) => _tap(token),
-                              child: SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: AnimatedScale(
-                                  scale: 1,
-                                  duration: const Duration(milliseconds: 120),
-                                  child: _tokenView(token.kind),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (d) => _tapAt(d.localPosition, size),
+                    child: SoftPlayField(
+                      child: CustomPaint(
+                        painter: CatchDotsPainter(dots: _dots, tick: _ticks),
+                        child: const SizedBox.expand(),
+                      ),
                     ),
                   ),
                 );

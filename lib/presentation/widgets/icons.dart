@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:finpet/domain/models.dart';
 
 abstract final class FinniIcons {
-  static const plan = Icons.pie_chart_rounded;
+  static const plan = Icons.fact_check_rounded;
   static const tasks = Icons.extension_rounded;
-  static const shop = Icons.storefront_rounded;
+  static const shop = Icons.shopping_bag_rounded;
   static const savings = Icons.savings_rounded;
-  static const progress = Icons.auto_graph_rounded;
-  static const adult = Icons.family_restroom_rounded;
+  static const progress = Icons.bar_chart_rounded;
+  static const adult = Icons.groups_rounded;
   static const help = Icons.menu_book_rounded;
-  static const coins = Icons.currency_ruble_rounded;
+  static const coins = Icons.monetization_on_rounded;
   static const need = Icons.restaurant_rounded;
   static const want = Icons.favorite_rounded;
   static const save = Icons.savings_outlined;
@@ -20,9 +20,10 @@ abstract final class FinniIcons {
   static const check = Icons.check_circle_rounded;
   static const close = Icons.cancel_rounded;
   static const timer = Icons.timer_rounded;
-  static const cards = Icons.style_rounded;
-  static const jars = Icons.inventory_2_rounded;
-  static const catcher = Icons.pan_tool_rounded;
+  static const cards = Icons.grid_view_rounded;
+  static const jars = Icons.account_balance_wallet_rounded;
+  static const catcher = Icons.savings_rounded;
+  static const needWant = Icons.thumbs_up_down_rounded;
 
   static IconData forTask(TaskTheme theme) => switch (theme) {
         TaskTheme.budget => plan,

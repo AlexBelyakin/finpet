@@ -19,6 +19,8 @@ class GameController extends ChangeNotifier {
   PetClip? _queuedClip;
   PetClip? _playingClip;
   Timer? _clipTimer;
+  Timer? _needsTimer;
+  DateTime? _clipStarted;
 
   PetClip get petClip {
     if (_playingClip != null) return _playingClip!;
@@ -32,6 +34,7 @@ class GameController extends ChangeNotifier {
     _clipTimer?.cancel();
     _clipTimer = null;
     _queuedClip = clip;
+    unawaited(PetModelRuntime.instance.prefetch(clip));
     PetModelBridge.prepare(clip);
   }
 
@@ -41,6 +44,8 @@ class GameController extends ChangeNotifier {
     _clipTimer = null;
     _queuedClip = null;
     _playingClip = clip;
+    _clipStarted = DateTime.now();
+    unawaited(PetModelRuntime.instance.prefetch(clip));
     notifyListeners();
     _armHold();
   }
@@ -51,6 +56,7 @@ class GameController extends ChangeNotifier {
     if (queued == null) return;
     _queuedClip = null;
     _playingClip = queued;
+    _clipStarted = DateTime.now();
     notifyListeners();
     _armHold();
   }
@@ -58,6 +64,11 @@ class GameController extends ChangeNotifier {
   void onActionClipFinished() {
     if (_playingClip == null) return;
     if (!PetClips.returnsToIdle(_playingClip!)) return;
+    final started = _clipStarted;
+    if (started != null &&
+        DateTime.now().difference(started) < const Duration(milliseconds: 450)) {
+      return;
+    }
     _clipTimer?.cancel();
     _clipTimer = null;
     _playingClip = null;
@@ -81,17 +92,41 @@ class GameController extends ChangeNotifier {
   @override
   void dispose() {
     _clipTimer?.cancel();
+    _needsTimer?.cancel();
     super.dispose();
   }
 
   Future<void> load() async {
     profile = await _store.read() ?? GameProfile.empty();
     loaded = true;
+    await applyNeedsDrift();
+    _armNeedsTimer();
     notifyListeners();
-    final body = profile.pet?.look.body;
-    if (body != null) {
-      unawaited(PetModelRuntime.instance.ensureBody(body));
+    final pet = profile.pet;
+    if (pet != null) {
+      unawaited(PetModelRuntime.instance.ensureBody(
+        pet.look.body,
+        idle: PetClips.idleFor(pet),
+      ));
     }
+  }
+
+  void _armNeedsTimer() {
+    _needsTimer?.cancel();
+    _needsTimer = Timer.periodic(const Duration(minutes: 20), (_) {
+      unawaited(applyNeedsDrift());
+    });
+  }
+
+  Future<void> applyNeedsDrift() async {
+    final next = Economy.settleNeeds(profile);
+    final samePet = next.pet?.satiety == profile.pet?.satiety &&
+        next.pet?.mood == profile.pet?.mood &&
+        next.needsAt == profile.needsAt;
+    if (samePet) return;
+    profile = next;
+    await _store.write(profile);
+    notifyListeners();
   }
 
   Future<void> _commit(EngineResult result) async {
@@ -105,6 +140,12 @@ class GameController extends ChangeNotifier {
 
   Future<void> markIntroSeen() async {
     profile = profile.copyWith(seenIntro: true);
+    await _store.write(profile);
+    notifyListeners();
+  }
+
+  Future<void> markHomeHintsSeen() async {
+    profile = profile.copyWith(seenHomeHints: true);
     await _store.write(profile);
     notifyListeners();
   }
@@ -164,10 +205,20 @@ class GameController extends ChangeNotifier {
     final result = Economy.completeTask(profile, task, answer);
     if (result.ok) {
       final gained = result.profile.coins - profile.coins;
+      final unlockedRoom2 =
+          !profile.room2Unlocked && result.profile.room2Unlocked;
       queueEventClip(
         gained >= task.reward ? PetClip.taskRight : PetClip.taskWrong,
       );
       await _commit(result);
+      if (unlockedRoom2) {
+        profile = profile.copyWith(
+          lastNextStep:
+              'Открылась усадьба у сада. Сменить место можно в меню — прогресс сохранится.',
+        );
+        await _store.write(profile);
+        notifyListeners();
+      }
     }
     return result;
   }
@@ -201,6 +252,14 @@ class GameController extends ChangeNotifier {
       await _commit(result);
     }
     return result;
+  }
+
+  Future<bool> setPlace(PetPlace place) async {
+    if (!profile.canUsePlace(place)) return false;
+    profile = profile.copyWith(place: place);
+    await _store.write(profile);
+    notifyListeners();
+    return true;
   }
 
   Future<void> setGoal(String goalId) async {

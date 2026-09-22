@@ -3,16 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:finpet/app/theme/app_theme.dart';
 import 'package:finpet/presentation/screens/games/game_ui.dart';
 import 'package:finpet/presentation/state/game_controller.dart';
+import 'package:finpet/presentation/widgets/common.dart';
 import 'package:finpet/presentation/widgets/icons.dart';
 import 'package:finpet/presentation/widgets/shell.dart';
 
 enum _Bin { need, want, save }
 
 class _Piece {
-  const _Piece(this.emoji, this.label, this.bin);
+  const _Piece(this.emoji, this.label, this.bin, this.why);
   final String emoji;
   final String label;
   final _Bin bin;
+  final String why;
+
+  String get binLabel => switch (bin) {
+        _Bin.need => 'Надо',
+        _Bin.want => 'Хочу',
+        _Bin.save => 'Копилка',
+      };
+
+  String explain(_Bin picked) {
+    final pickedLabel = switch (picked) {
+      _Bin.need => 'Надо',
+      _Bin.want => 'Хочу',
+      _Bin.save => 'Копилка',
+    };
+    return '$label сюда не подходит. $why Правильная баночка — «$binLabel», а ты положил в «$pickedLabel».';
+  }
 }
 
 class SortJarsGameScreen extends StatefulWidget {
@@ -26,15 +43,15 @@ class SortJarsGameScreen extends StatefulWidget {
 
 class _SortJarsGameScreenState extends State<SortJarsGameScreen> {
   static const _pool = [
-    _Piece('🥣', 'Корм', _Bin.need),
-    _Piece('🚌', 'Проезд', _Bin.need),
-    _Piece('💊', 'Лекарство', _Bin.need),
-    _Piece('🎮', 'Игра', _Bin.want),
-    _Piece('🍦', 'Мороженое', _Bin.want),
-    _Piece('🧸', 'Игрушка', _Bin.want),
-    _Piece('🏠', 'На домик', _Bin.save),
-    _Piece('🐷', 'В копилку', _Bin.save),
-    _Piece('🎯', 'На цель', _Bin.save),
+    _Piece('🥣', 'Корм', _Bin.need, 'Питомец должен есть — это нужное.'),
+    _Piece('🚌', 'Проезд', _Bin.need, 'До школы нужно доехать.'),
+    _Piece('💊', 'Лекарство', _Bin.need, 'Здоровье важнее хотелок.'),
+    _Piece('🎮', 'Игра', _Bin.want, 'Игру можно купить позже.'),
+    _Piece('🍦', 'Мороженое', _Bin.want, 'Мороженое приятное, но не обязательное.'),
+    _Piece('🧸', 'Игрушка', _Bin.want, 'Игрушка — это желаемое.'),
+    _Piece('🏠', 'На домик', _Bin.save, 'Домик — цель, монеты откладывают.'),
+    _Piece('🐷', 'В копилку', _Bin.save, 'Это прямо про копилку.'),
+    _Piece('🎯', 'На цель', _Bin.save, 'Цель копят, а не тратят сразу.'),
   ];
 
   late List<_Piece> _queue;
@@ -58,12 +75,20 @@ class _SortJarsGameScreenState extends State<SortJarsGameScreen> {
   Future<void> _drop(_Piece piece, _Bin bin) async {
     if (_finished) return;
     final ok = piece.bin == bin;
+    if (!ok) {
+      await showOkHint(
+        context,
+        title: 'Ой, не та баночка',
+        body: piece.explain(bin),
+      );
+      return;
+    }
     setState(() {
       _queue.remove(piece);
       _placed[bin]!.add(piece);
-      if (ok) _score += 1;
+      _score += 1;
       _doneCount += 1;
-      _flash = ok ? 'Верно!' : 'Эта баночка для другого';
+      _flash = 'Верно!';
     });
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
@@ -178,7 +203,8 @@ class _SortJarsGameScreenState extends State<SortJarsGameScreen> {
             ),
             child: Column(
               children: [
-                Icon(icon, color: AppTheme.ink),
+                CircleGlyph(icon: icon, color: color, size: 48, iconSize: 24),
+                const SizedBox(height: 6),
                 Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
                 Expanded(

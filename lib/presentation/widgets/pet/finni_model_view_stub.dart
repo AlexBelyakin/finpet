@@ -12,3 +12,9 @@ Widget buildPetModelImpl({
     child: Icon(Icons.pets_rounded, color: AppTheme.mint),
   );
 }
+
+Future<void> preparePetViewerImpl() async {}
+
+Future<void> primePetViewerImpl(PetClip clip, PetBody body) async {}
+
+Widget? petViewerWarmupImpl() => null;

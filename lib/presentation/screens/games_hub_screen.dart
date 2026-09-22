@@ -36,14 +36,10 @@ class GamesHubScreen extends StatelessWidget {
               SurfaceCard(
                 child: Row(
                   children: [
-                    ProgressRing(
-                      value: Economy.maxMinigameCoinsPerPeriod == 0
-                          ? 0
-                          : left / Economy.maxMinigameCoinsPerPeriod,
-                      color: AppTheme.peach,
-                      size: 72,
-                      stroke: 8,
-                      child: Icon(FinniIcons.games, color: AppTheme.peach, size: 28),
+                    CircleGlyph(
+                      icon: FinniIcons.games,
+                      color: const Color(0xFF4EA2FF),
+                      size: 64,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -60,10 +56,10 @@ class GamesHubScreen extends StatelessWidget {
                   ),
               const SizedBox(height: 12),
               _GameCard(
-                icon: FinniIcons.need,
+                icon: FinniIcons.needWant,
                 title: 'Надо или хочу?',
                 subtitle: 'Жми или перетащи карточку в нужную сторону.',
-                color: AppTheme.mint,
+                color: const Color(0xFF5FCBB0),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -76,7 +72,7 @@ class GamesHubScreen extends StatelessWidget {
                 icon: FinniIcons.coins,
                 title: 'Лови монетки',
                 subtitle: 'Монеты падают. Тапай их, не хватай лишние траты.',
-                color: AppTheme.gold,
+                color: const Color(0xFFE8B84A),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -89,7 +85,7 @@ class GamesHubScreen extends StatelessWidget {
                 icon: FinniIcons.jars,
                 title: 'Три баночки',
                 subtitle: 'Разложи: надо, хочу и копилка.',
-                color: AppTheme.sky,
+                color: const Color(0xFF4EA2FF),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -99,10 +95,10 @@ class GamesHubScreen extends StatelessWidget {
                 },
               ),
               _GameCard(
-                icon: FinniIcons.savings,
+                icon: FinniIcons.catcher,
                 title: 'Копилка ловит',
-                subtitle: 'Води копилку и лови монеты, не покупки.',
-                color: AppTheme.peach,
+                subtitle: 'Води копилку и лови монеты. Три уровня сложности.',
+                color: const Color(0xFFF27BA0),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -114,8 +110,8 @@ class GamesHubScreen extends StatelessWidget {
               _GameCard(
                 icon: FinniIcons.cards,
                 title: 'Найди пары',
-                subtitle: 'Открой две одинаковые карточки.',
-                color: AppTheme.lilac,
+                subtitle: 'Открой две одинаковые карточки. Три уровня сложности.',
+                color: const Color(0xFF8B7CFF),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -153,34 +149,18 @@ class _GameCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: PressScale(
         child: Material(
-          color: color.withValues(alpha: 0.28),
+          color: Colors.white,
+          elevation: 2,
+          shadowColor: AppTheme.ink.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(22),
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [color, color.withValues(alpha: 0.7)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.45),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Icon(icon, size: 36, color: Colors.white),
-                  ),
+                  CircleGlyph(icon: icon, color: color, size: 64, iconSize: 32),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -193,11 +173,22 @@ class _GameCard extends StatelessWidget {
                             fontSize: 18,
                           ),
                         ),
-                        Text(subtitle),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: AppTheme.ink.withValues(alpha: 0.68),
+                            height: 1.3,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: AppTheme.ink.withValues(alpha: 0.5), size: 32),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.ink.withValues(alpha: 0.35),
+                    size: 28,
+                  ),
                 ],
               ),
             ),
