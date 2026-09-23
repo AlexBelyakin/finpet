@@ -9,7 +9,13 @@ class PetModelRuntime {
 
   Future<void> start() async {}
 
-  Future<void> ensureBody(PetBody body, {PetClip? idle}) async {}
+  Future<void> ensureBody(
+    PetBody body, {
+    PetClip? idle,
+    bool warm = true,
+  }) async {}
 
-  Future<void> prefetch(PetClip clip) async {}
+  Future<void> prefetch(PetClip clip, [PetBody? body]) async {}
+
+  bool hasClip(PetClip clip, PetBody body) => false;
 }

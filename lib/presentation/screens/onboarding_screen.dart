@@ -22,46 +22,54 @@ class OnboardingScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const GlossaryScreen(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const GlossaryScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.help_outline),
+                          ),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.help_outline),
+                        const SizedBox(height: 12),
+                        Image.asset(AppAssets.logo, height: 96),
+                        const SizedBox(height: 20),
+                        SurfaceCard(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Привет! Это игра про заботу о питомце и монетах.',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Дели монеты на нужное, желаемое и копилку. Помогай питомцу заданиями и покупками. Настоящие деньги не нужны: если что-то пошло не так, питомец останется — сложи новый план и попробуй снова.',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Готов играть?',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(duration: 280.ms),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Image.asset(AppAssets.logo, height: 96),
-                const SizedBox(height: 20),
-                SurfaceCard(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Привет! Это игра про заботу о питомце и монетах.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Дели монеты на нужное, желаемое и копилку. Помогай питомцу заданиями и покупками. Настоящие деньги не нужны: если что-то пошло не так, питомец останется — сложи новый план и попробуй снова.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Готов играть?',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 280.ms),
-                const Spacer(),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(

@@ -22,8 +22,12 @@ class PetViewerSession {
   WebViewController? controller;
   VoidCallback? onFinished;
   PetClip? currentClip;
+  PetClip? _wantClip;
+  PetBody? _wantBody;
   Future<void>? _preparing;
   Completer<void>? _ready;
+  var _applyGen = 0;
+  var _warmingOther = false;
 
   Future<void> ensure() {
     if (_inWidgetTest) return Future.value();
@@ -73,24 +77,60 @@ class PetViewerSession {
   }
 
   Future<void> apply(PetClip clip, PetBody body) async {
-    await ensure();
-    await _awaitReady();
-    final web = controller;
-    if (web == null) return;
-    await PetModelRuntime.instance.ensureBody(
-      body,
-      idle: PetClips.returnsToIdle(clip) ? null : clip,
-    );
-    currentClip = clip;
-    final bodyJs = jsonEncode(body.name);
-    final nameJs = jsonEncode(PetClips.clipName(clip));
-    await web.runJavaScript('Finni.setBody($bodyJs);');
-    if (PetClips.returnsToIdle(clip)) {
+    _wantClip = clip;
+    _wantBody = body;
+    final gen = ++_applyGen;
+    try {
+      await ensure();
+      if (gen != _applyGen) return;
+      await _awaitReady();
+      if (gen != _applyGen) return;
+      final web = controller;
+      if (web == null) return;
+      final need = _wantClip ?? clip;
+      final who = _wantBody ?? body;
+      if (!PetModelRuntime.instance.hasClip(need, who)) {
+        PetModelBridge.applying.value = true;
+        await PetModelRuntime.instance.ensureBody(
+          who,
+          idle: PetClips.returnsToIdle(need) ? null : need,
+          warm: false,
+        );
+        if (gen != _applyGen) return;
+      }
+      final shownClip = _wantClip ?? clip;
+      final shownBody = _wantBody ?? body;
+      currentClip = shownClip;
+      final bodyJs = jsonEncode(shownBody.name);
+      final nameJs = jsonEncode(PetClips.clipName(shownClip));
+      final asAction = PetClips.returnsToIdle(shownClip);
       await web.runJavaScript(
-        'Finni.playAction($nameJs, ${PetClips.isLoop(clip)});',
+        'Finni.show($bodyJs, $nameJs, ${asAction ? 'true' : 'false'}, ${PetClips.isLoop(shownClip)});',
       );
-    } else {
-      await web.runJavaScript('Finni.playIdle($nameJs);');
+      if (gen == _applyGen && !asAction) {
+        unawaited(_preloadOther(shownBody));
+      }
+    } finally {
+      if (gen == _applyGen) PetModelBridge.applying.value = false;
+    }
+  }
+
+  Future<void> _preloadOther(PetBody shown) async {
+    if (_warmingOther) return;
+    _warmingOther = true;
+    try {
+      final other = shown == PetBody.finni ? PetBody.nori : PetBody.finni;
+      await PetModelRuntime.instance.ensureBody(
+        other,
+        idle: PetClip.idleGood,
+        warm: false,
+      );
+      final web = controller;
+      if (web == null) return;
+      final bodyJs = jsonEncode(other.name);
+      await web.runJavaScript('Finni.preload("idle_good", $bodyJs);');
+    } finally {
+      _warmingOther = false;
     }
   }
 
@@ -100,7 +140,7 @@ class PetViewerSession {
     final web = controller;
     if (web == null) return;
     await PetModelRuntime.instance.ensureBody(body);
-    await PetModelRuntime.instance.prefetch(clip);
+    await PetModelRuntime.instance.prefetch(clip, body);
     final bodyJs = jsonEncode(body.name);
     final nameJs = jsonEncode(PetClips.clipName(clip));
     await web.runJavaScript('Finni.setBody($bodyJs); Finni.prepare($nameJs);');

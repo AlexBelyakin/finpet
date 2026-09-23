@@ -42,41 +42,36 @@ class PetModelRuntime {
     _server!.listen(_onRequest);
   }
 
-  Future<void> ensureBody(PetBody body, {PetClip? idle}) async {
+  Future<void> ensureBody(
+    PetBody body, {
+    PetClip? idle,
+    bool warm = true,
+  }) async {
     if (_inTest) {
       _body = body;
       return;
     }
     await start();
     final clip = idle ?? PetClip.idleGood;
-    final changed = _body != body;
     _body = body;
-    if (changed) _dropOtherBodies(body);
     _pinnedKey = PetClips.fileKey(clip, body);
     await _loadClip(clip, body);
-    unawaited(_warmLikely(body));
+    if (warm) unawaited(_warmLikely(body));
   }
 
-  Future<void> prefetch(PetClip clip) async {
+  bool hasClip(PetClip clip, PetBody body) =>
+      _bytes.containsKey(PetClips.fileKey(clip, body));
+
+  Future<void> prefetch(PetClip clip, [PetBody? body]) async {
     if (_inTest) return;
     await start();
-    await _loadClip(clip, _body);
+    await _loadClip(clip, body ?? _body);
   }
 
   Future<void> _warmLikely(PetBody body) async {
     for (final clip in PetClips.warmClips) {
       if (_body != body) return;
       await _loadClip(clip, body);
-    }
-  }
-
-  void _dropOtherBodies(PetBody body) {
-    final prefix = '${body.name}/';
-    _bytes.removeWhere((key, _) => !key.startsWith(prefix));
-    _order.removeWhere((key) => !key.startsWith(prefix));
-    _loading.removeWhere((key, _) => !key.startsWith(prefix));
-    if (_pinnedKey != null && !_pinnedKey!.startsWith(prefix)) {
-      _pinnedKey = null;
     }
   }
 
@@ -107,11 +102,16 @@ class PetModelRuntime {
     _order.add(key);
   }
 
+  bool _keep(String key) {
+    if (key == _pinnedKey) return true;
+    return key.endsWith('/idle_good');
+  }
+
   void _trim() {
     if (_bytes.length <= _maxCached) return;
     for (final key in List<String>.from(_order)) {
       if (_bytes.length <= _maxCached) return;
-      if (key == _pinnedKey) continue;
+      if (_keep(key)) continue;
       _bytes.remove(key);
       _order.remove(key);
     }
@@ -274,17 +274,39 @@ let front = 0;
 let mode = 'idle';
 let idleName = 'idle_good';
 let playGen = 0;
+let loadSeq = 0;
 let pendingAction = null;
 let liveAction = null;
 
 window.FinniBody = 'finni';
 
-function url(name) {
-  return '/clips/' + (window.FinniBody || 'finni') + '/' + name + '.glb';
+function bodyName() {
+  return window.FinniBody || 'finni';
 }
 
-function isReady(el, name) {
-  return el.dataset.clip === name && el.dataset.ready === '1';
+function urlFor(body, name) {
+  return '/clips/' + body + '/' + name + '.glb';
+}
+
+function srcIs(el, next) {
+  const src = el.getAttribute('src') || '';
+  return src === next || src.endsWith(next);
+}
+
+function isReady(el, body, name) {
+  return el.dataset.clip === name &&
+    el.dataset.body === body &&
+    el.dataset.ready === '1';
+}
+
+function findLayer(body, name) {
+  const next = urlFor(body, name);
+  for (let i = 0; i < layers.length; i++) {
+    const el = layers[i];
+    if (isReady(el, body, name)) return el;
+    if (srcIs(el, next) && (el.loaded || el.dataset.ready === '1')) return el;
+  }
+  return null;
 }
 
 function afterPaint(fn) {
@@ -304,21 +326,46 @@ function playIdleLoop(el) {
   } catch (e) {}
 }
 
-function loadClip(el, name, onReady) {
-  if (isReady(el, name)) {
+function loadClip(el, name, onReady, bodyOpt) {
+  const body = bodyOpt || bodyName();
+  const next = urlFor(body, name);
+  if (isReady(el, body, name) || (srcIs(el, next) && (el.loaded || el.dataset.ready === '1'))) {
+    el.dataset.clip = name;
+    el.dataset.body = body;
+    el.dataset.ready = '1';
     onReady();
     return;
   }
   el.dataset.clip = name;
-  el.dataset.ready = '0';
-  const onLoad = function () {
-    el.removeEventListener('load', onLoad);
-    if (el.dataset.clip !== name) return;
+  el.dataset.body = body;
+  const token = body + ':' + name + ':' + String(++loadSeq);
+  el.dataset.load = token;
+  const finish = function () {
+    if (el.dataset.load !== token) return;
+    if (el.dataset.clip !== name || el.dataset.body !== body) return;
     el.dataset.ready = '1';
     requestAnimationFrame(onReady);
   };
+  if (srcIs(el, next)) {
+    if (el.loaded) {
+      finish();
+      return;
+    }
+    el.dataset.ready = '0';
+    const onLoad = function () {
+      el.removeEventListener('load', onLoad);
+      finish();
+    };
+    el.addEventListener('load', onLoad);
+    return;
+  }
+  el.dataset.ready = '0';
+  const onLoad = function () {
+    el.removeEventListener('load', onLoad);
+    finish();
+  };
   el.addEventListener('load', onLoad);
-  el.src = url(name);
+  el.src = next;
 }
 
 function showIncoming(incoming, startPlay) {
@@ -337,28 +384,32 @@ function playIdle(name) {
   idleName = name;
   pendingAction = null;
   liveAction = null;
-  const shown = layers[front];
-  if (mode === 'idle' && isReady(shown, name) && shown.style.opacity === '1') {
-    return;
-  }
+  const body = bodyName();
   playGen += 1;
   const gen = playGen;
   mode = 'idle';
-
-  if (isReady(shown, name)) {
-    playIdleLoop(shown);
-    shown.style.opacity = '1';
+  const have = findLayer(body, name);
+  if (have) {
+    have.dataset.clip = name;
+    have.dataset.body = body;
+    have.dataset.ready = '1';
+    if (have === layers[front]) {
+      playIdleLoop(have);
+      have.style.opacity = '1';
+      return;
+    }
+    showIncoming(have, playIdleLoop);
     return;
   }
-
   const incoming = layers[1 - front];
   loadClip(incoming, name, function () {
     if (playGen !== gen) return;
     showIncoming(incoming, playIdleLoop);
-  });
+  }, body);
 }
 
 function playAction(name, loop) {
+  const body = bodyName();
   playGen += 1;
   const gen = playGen;
   pendingAction = name;
@@ -379,24 +430,31 @@ function playAction(name, loop) {
         });
       } catch (e) {}
     });
-  });
+  }, body);
 }
 
 function prepare(name) {
   if (pendingAction) return;
-  loadClip(layers[1 - front], name, function () {});
+  loadClip(layers[1 - front], name, function () {}, bodyName());
+}
+
+function preload(name, body) {
+  if (findLayer(body, name)) return;
+  const hidden = layers[1 - front];
+  if (hidden.dataset.body === bodyName() && hidden.dataset.ready === '1') return;
+  loadClip(hidden, name, function () {}, body);
 }
 
 function setBody(body) {
-  if (window.FinniBody === body) return;
   window.FinniBody = body;
-  playGen += 1;
+}
+
+function show(body, name, asAction, loop) {
+  window.FinniBody = body;
   pendingAction = null;
   liveAction = null;
-  layers.forEach(function (el) {
-    el.dataset.clip = '';
-    el.dataset.ready = '0';
-  });
+  if (asAction) playAction(name, !!loop);
+  else playIdle(name);
 }
 
 layers.forEach(function (el) {
@@ -410,7 +468,7 @@ layers.forEach(function (el) {
   });
 });
 
-window.Finni = { setBody: setBody, playIdle: playIdle, playAction: playAction, prepare: prepare };
+window.Finni = { setBody: setBody, playIdle: playIdle, playAction: playAction, prepare: prepare, show: show, preload: preload };
 customElements.whenDefined('model-viewer').then(function () {
   try { FinniPet.postMessage('ready'); } catch (e) {}
 });
