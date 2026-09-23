@@ -12,11 +12,13 @@ class FinniScaffold extends StatelessWidget {
     required this.title,
     required this.body,
     this.floating,
+    this.alignment = Alignment.topCenter,   
   });
 
   final String title;
   final Widget body;
   final Widget? floating;
+  final AlignmentGeometry alignment;        
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +43,8 @@ class FinniScaffold extends StatelessWidget {
       floatingActionButton: floating,
       body: SafeArea(
         child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
+         alignment: alignment,                   // ← используем параметр
+            child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: AppLayout.isWide(context) ? 980 : double.infinity,
             ),

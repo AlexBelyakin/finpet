@@ -28,8 +28,10 @@ class SoftPlayField extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            const RepaintBoundary(
-              child: _SoftPlayDecor(),
+            const Positioned.fill(                    
+              child: RepaintBoundary(
+                child: _SoftPlayDecor(),
+              ),
             ),
             child,
           ],
@@ -37,7 +39,6 @@ class SoftPlayField extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _SoftPlayDecor extends StatelessWidget {
@@ -179,28 +180,27 @@ class GameResultBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return FinniScaffold(
       title: title,
-      body: Center(
-        child: SoftPlayField(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircleGlyph(
-                  icon: Icons.emoji_events_rounded,
-                  color: Color(0xFFE8B84A),
-                  size: 88,
-                  iconSize: 44,
-                ),
-                const SizedBox(height: 16),
-                Text(scoreLine, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(coinsLine),
-                const SizedBox(height: 20),
-                FilledButton(onPressed: onAgain, child: const Text('Ещё раз')),
-                TextButton(onPressed: onDone, child: const Text('Готово')),
-              ],
-            ),
+      alignment: Alignment.center,        
+      body: SoftPlayField(                
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircleGlyph(
+                icon: Icons.emoji_events_rounded,
+                color: Color(0xFFE8B84A),
+                size: 88,
+                iconSize: 44,
+              ),
+              const SizedBox(height: 16),
+              Text(scoreLine, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(coinsLine),
+              const SizedBox(height: 20),
+              FilledButton(onPressed: onAgain, child: const Text('Ещё раз')),
+              TextButton(onPressed: onDone, child: const Text('Готово')),
+            ],
           ),
         ),
       ),
