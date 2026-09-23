@@ -2,7 +2,7 @@ enum PetBody { finni, nori }
 
 enum PetSpecies { cat, fox, bird }
 
-enum PetColor { peach, mint, sky, wave }
+enum PetColor { natural, peach, mint, sky, wave, lilac }
 
 enum PetPlace {
   room,
@@ -47,11 +47,15 @@ class PetLook {
 
   String get speciesLabel => bodyLabel;
 
+  bool get paints => color != PetColor.natural;
+
   String get colorLabel => switch (color) {
+        PetColor.natural => 'Как есть',
         PetColor.peach => 'Персик',
         PetColor.mint => 'Мята',
         PetColor.sky => 'Небо',
         PetColor.wave => 'Волна',
+        PetColor.lilac => 'Сирень',
       };
 
   Map<String, dynamic> toJson() => {
@@ -65,7 +69,8 @@ class PetLook {
             ? PetBody.finni
             : PetBody.values.byName(json['body'] as String),
         species: PetSpecies.values.byName(json['species'] as String),
-        color: PetColor.values.byName(json['color'] as String),
+        color: PetColor.values.asNameMap()[json['color'] as String?] ??
+            PetColor.peach,
       );
 }
 

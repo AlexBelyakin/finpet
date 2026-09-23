@@ -20,10 +20,12 @@ abstract final class AppTheme {
   static const playGreen = Color(0xFF2BB673);
 
   static Color petTint(PetColor color) => switch (color) {
+        PetColor.natural => card,
         PetColor.peach => peach,
         PetColor.mint => mint,
         PetColor.sky => sky,
         PetColor.wave => wave,
+        PetColor.lilac => lilac,
       };
 
   static ThemeData data() {

@@ -24,12 +24,14 @@ class CreatePetScreen extends StatefulWidget {
 
 class _CreatePetScreenState extends State<CreatePetScreen> {
   final _player = TextEditingController();
-  final _pet = TextEditingController(text: 'Финни');
+  final _pet = TextEditingController();
   PetLook _look = const PetLook(
     body: PetBody.finni,
     species: PetSpecies.cat,
     color: PetColor.peach,
   );
+  var _bodyPicked = false;
+  var _colorPicked = false;
   var _starting = false;
 
   @override
@@ -61,7 +63,7 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
   }
 
   Pet get _preview => Pet(
-        name: _pet.text.trim().isEmpty ? _look.bodyLabel : _pet.text.trim(),
+        name: _pet.text.trim(),
         look: _look,
         satiety: 70,
         mood: 80,
@@ -70,13 +72,32 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
         moodReason: '',
       );
 
-  void _select(PetLook look) {
-    final previous = _look.bodyLabel;
+  bool get _canPlay =>
+      _bodyPicked &&
+      _colorPicked &&
+      _pet.text.trim().isNotEmpty &&
+      !_starting;
+
+  void _selectBody(PetBody body) {
+    final next = PetLook(
+      body: body,
+      species: body == PetBody.finni ? PetSpecies.cat : PetSpecies.fox,
+      color: _colorPicked ? _look.color : PetColor.peach,
+    );
     setState(() {
-      _look = look;
-      if (_pet.text.trim().isEmpty || _pet.text.trim() == previous) {
-        _pet.text = look.bodyLabel;
-      }
+      _look = next;
+      _bodyPicked = true;
+    });
+  }
+
+  void _selectColor(PetColor color) {
+    setState(() {
+      _look = PetLook(
+        body: _look.body,
+        species: _look.species,
+        color: color,
+      );
+      _colorPicked = true;
     });
   }
 
@@ -113,7 +134,7 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Выбери персонажа',
+                        'Выбери персонажа и цвет',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
@@ -143,6 +164,8 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                                 FinniPetView(
                                   pet: _preview,
                                   size: previewSize,
+                                  showCaption: false,
+                                  tint: _colorPicked && _look.paints,
                                 ),
                                 ListenableBuilder(
                                   listenable: PetModelBridge.applying,
@@ -169,12 +192,24 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _look.bodyLabel,
-                              style: TextStyle(
+                              _pet.text.trim().isEmpty
+                                  ? 'Здесь будет твой друг'
+                                  : _pet.text.trim(),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
                                 fontFamily: AppFonts.display,
-                                color: AppTheme.ink.withValues(alpha: 0.7),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.ink,
                               ),
                             ),
+                            if (_pet.text.trim().isNotEmpty)
+                              Text(
+                                _preview.stageLabel,
+                                style: TextStyle(
+                                  color: AppTheme.ink.withValues(alpha: 0.72),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -186,32 +221,42 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          for (final look in [
-                            const PetLook(
-                              body: PetBody.finni,
-                              species: PetSpecies.cat,
-                              color: PetColor.peach,
-                            ),
-                            const PetLook(
-                              body: PetBody.nori,
-                              species: PetSpecies.fox,
-                              color: PetColor.mint,
-                            ),
-                          ])
+                          for (final body in PetBody.values)
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
                                 ),
                                 child: _BodyCard(
-                                  look: look,
-                                  selected: _look.body == look.body,
-                                  onTap: () => _select(look),
+                                  body: body,
+                                  selected: _bodyPicked && _look.body == body,
+                                  onTap: () => _selectBody(body),
                                 ),
                               ),
                             ),
                         ],
                       ),
+                      if (_bodyPicked) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Какого цвета?',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final color in PetColor.values)
+                              _ColorChip(
+                                color: color,
+                                selected: _colorPicked && _look.color == color,
+                                onTap: () => _selectColor(color),
+                              ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       SurfaceCard(
                         child: Column(
@@ -230,7 +275,7 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                               onChanged: (_) => setState(() {}),
                               textCapitalization: TextCapitalization.words,
                               decoration: const InputDecoration(
-                                labelText: 'Имя питомца',
+                                labelText: 'Имя персонажа',
                                 border: OutlineInputBorder(),
                               ),
                             ),
@@ -251,10 +296,14 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
                   width: double.infinity,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.playGreen,
+                      backgroundColor: _canPlay
+                          ? AppTheme.playGreen
+                          : const Color(0xFFB7B7B7),
+                      disabledBackgroundColor: const Color(0xFFB7B7B7),
+                      disabledForegroundColor: Colors.white,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: _starting ? null : _play,
+                    onPressed: _canPlay ? _play : null,
                     child: const Text('Играть!'),
                   ),
                 ),
@@ -269,17 +318,21 @@ class _CreatePetScreenState extends State<CreatePetScreen> {
 
 class _BodyCard extends StatelessWidget {
   const _BodyCard({
-    required this.look,
+    required this.body,
     required this.selected,
     required this.onTap,
   });
 
-  final PetLook look;
+  final PetBody body;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final label = switch (body) {
+      PetBody.finni => 'Финни',
+      PetBody.nori => 'Нори',
+    };
     return Material(
       color: selected ? AppTheme.playGreen.withValues(alpha: 0.18) : AppTheme.card,
       borderRadius: BorderRadius.circular(18),
@@ -296,7 +349,7 @@ class _BodyCard extends StatelessWidget {
             ),
           ),
           child: Text(
-            look.bodyLabel,
+            label,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: AppFonts.display,
@@ -305,6 +358,71 @@ class _BodyCard extends StatelessWidget {
               color: AppTheme.ink,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorChip extends StatelessWidget {
+  const _ColorChip({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final PetColor color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final natural = color == PetColor.natural;
+    final fill = AppTheme.petTint(color);
+    return SizedBox(
+      width: 56,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: fill,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? AppTheme.ink : Colors.white,
+                  width: selected ? 3 : 2,
+                ),
+              ),
+              child: natural
+                  ? Icon(
+                      Icons.auto_awesome_outlined,
+                      size: 22,
+                      color: AppTheme.ink.withValues(alpha: 0.55),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              PetLook(
+                body: PetBody.finni,
+                species: PetSpecies.cat,
+                color: color,
+              ).colorLabel,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppFonts.body,
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: AppTheme.ink,
+              ),
+            ),
+          ],
         ),
       ),
     );

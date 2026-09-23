@@ -344,7 +344,10 @@ function loadClip(el, name, onReady, bodyOpt) {
     if (el.dataset.load !== token) return;
     if (el.dataset.clip !== name || el.dataset.body !== body) return;
     el.dataset.ready = '1';
-    requestAnimationFrame(onReady);
+    requestAnimationFrame(function () {
+      paintTint();
+      onReady();
+    });
   };
   if (srcIs(el, next)) {
     if (el.loaded) {
@@ -368,6 +371,269 @@ function loadClip(el, name, onReady, bodyOpt) {
   el.src = next;
 }
 
+const tintRgb = {
+  peach: [1.00, 0.58, 0.34],
+  mint: [0.32, 0.84, 0.62],
+  sky: [0.32, 0.70, 0.98],
+  wave: [0.95, 0.62, 0.48],
+  lilac: [0.78, 0.58, 0.98]
+};
+
+let tintGen = 0;
+const albedoCache = {};
+
+function hueDiff(a, b) {
+  let d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+function rgbToHsl(r, g, b) {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l: l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return { h: h * 60, s: s, l: l };
+}
+
+function hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return [r + m, g + m, b + m];
+}
+
+function saveMat(mat) {
+  if (mat._finniSaved) return;
+  const pbr = mat.pbrMetallicRoughness;
+  let tex = null;
+  try {
+    tex = pbr.baseColorTexture && pbr.baseColorTexture.texture;
+  } catch (e) {}
+  let factor = [1, 1, 1, 1];
+  try {
+    if (pbr.baseColorFactor) factor = Array.from(pbr.baseColorFactor);
+  } catch (e) {}
+  mat._finniSaved = { factor: factor, tex: tex };
+}
+
+function restoreLayer(el) {
+  const model = el.model;
+  if (!model) return;
+  model.materials.forEach(function (mat) {
+    if (!mat._finniSaved) return;
+    const pbr = mat.pbrMetallicRoughness;
+    try {
+      if (pbr.baseColorTexture) {
+        pbr.baseColorTexture.setTexture(mat._finniSaved.tex || null);
+      }
+    } catch (e) {}
+    try {
+      pbr.setBaseColorFactor(mat._finniSaved.factor);
+    } catch (e) {}
+  });
+}
+
+function readGlbChunks(buf) {
+  const dv = new DataView(buf);
+  let o = 12;
+  let json = null;
+  let bin = null;
+  while (o + 8 <= buf.byteLength) {
+    const len = dv.getUint32(o, true);
+    const type = String.fromCharCode(
+      dv.getUint8(o + 4), dv.getUint8(o + 5),
+      dv.getUint8(o + 6), dv.getUint8(o + 7)
+    );
+    const start = o + 8;
+    if (type.indexOf('JSON') === 0) {
+      json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, start, len)));
+    } else if (type.indexOf('BIN') === 0) {
+      bin = buf.slice(start, start + len);
+    }
+    o = start + len;
+    if (o % 4) o += 4 - (o % 4);
+  }
+  return { json: json, bin: bin };
+}
+
+function blobToImage(blob) {
+  return new Promise(function (resolve, reject) {
+    const img = new Image();
+    img.onload = function () { resolve(img); };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+async function albedoFromGlb(url) {
+  if (albedoCache[url]) return albedoCache[url];
+  const buf = await fetch(url).then(function (r) { return r.arrayBuffer(); });
+  const chunks = readGlbChunks(buf);
+  const json = chunks.json;
+  const texIndex = json.materials[0].pbrMetallicRoughness.baseColorTexture.index;
+  const imgIndex = json.textures[texIndex].source;
+  const image = json.images[imgIndex];
+  const view = json.bufferViews[image.bufferView];
+  const bytes = new Uint8Array(chunks.bin, view.byteOffset || 0, view.byteLength);
+  const img = await blobToImage(new Blob([bytes], {
+    type: image.mimeType || 'image/jpeg'
+  }));
+  albedoCache[url] = img;
+  return img;
+}
+
+async function albedoImage(tex) {
+  if (!tex || !tex.source) return null;
+  const src = tex.source;
+  if (typeof src.createThumbnail === 'function') {
+    try { return await src.createThumbnail(1024, 1024); } catch (e) {}
+  }
+  if (src.element && (src.element.naturalWidth || src.element.width)) {
+    return src.element;
+  }
+  return src.element || null;
+}
+
+function recolorAlbedo(img, rgb) {
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+  if (!srcW || !srcH) return null;
+  const scale = Math.min(1, 1024 / Math.max(srcW, srcH));
+  const w = Math.max(1, Math.round(srcW * scale));
+  const h = Math.max(1, Math.round(srcH * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const data = ctx.getImageData(0, 0, w, h);
+  const px = data.data;
+  const bins = new Array(36).fill(0);
+  for (let i = 0; i < px.length; i += 4) {
+    const hsl = rgbToHsl(px[i] / 255, px[i + 1] / 255, px[i + 2] / 255);
+    if (hsl.l > 0.18 && hsl.l < 0.84 && hsl.s > 0.12) {
+      bins[Math.floor(hsl.h / 10) % 36] += 1;
+    }
+  }
+  let best = 0;
+  let bin = 0;
+  for (let i = 0; i < 36; i++) {
+    if (bins[i] > best) {
+      best = bins[i];
+      bin = i;
+    }
+  }
+  const bodyHue = bin * 10 + 5;
+  const tgt = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+  for (let i = 0; i < px.length; i += 4) {
+    const hsl = rgbToHsl(px[i] / 255, px[i + 1] / 255, px[i + 2] / 255);
+    if (hsl.l < 0.15) continue;
+    if (hsl.l > 0.86 && hsl.s < 0.22) continue;
+    if (hueDiff(hsl.h, bodyHue) > 46 && hsl.s > 0.16) continue;
+    const out = hslToRgb(
+      tgt.h,
+      Math.min(1, tgt.s * 0.78 + hsl.s * 0.22),
+      hsl.l * 0.58 + tgt.l * 0.42
+    );
+    px[i] = Math.round(out[0] * 255);
+    px[i + 1] = Math.round(out[1] * 255);
+    px[i + 2] = Math.round(out[2] * 255);
+  }
+  ctx.putImageData(data, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+async function paintLayer(el, rgb) {
+  const model = el.model;
+  if (!model || !model.materials || !model.materials.length) return;
+  const key = el.dataset.body + ':' + el.dataset.clip + ':' + rgb.join(',');
+  if (el._tintKey === key && el._tintTex) {
+    return applyTintTex(el, el._tintTex);
+  }
+  const clipKey = el.dataset.body + ':' + el.dataset.clip;
+  if (el._tintClip !== clipKey) {
+    el._tintClip = clipKey;
+    el._albedoImg = null;
+    el._tintTex = null;
+    el._tintKey = '';
+  }
+  let img = el._albedoImg;
+  if (!img) {
+    const clipUrl = urlFor(el.dataset.body || bodyName(), el.dataset.clip || idleName);
+    try { img = await albedoFromGlb(clipUrl); } catch (e) {}
+    if (!img) {
+      const mat0 = model.materials[0];
+      saveMat(mat0);
+      try { img = await albedoImage(mat0._finniSaved && mat0._finniSaved.tex); } catch (e) {}
+    }
+    el._albedoImg = img || null;
+  }
+  if (!img || typeof el.createTexture !== 'function') return;
+  const url = recolorAlbedo(img, rgb);
+  if (!url) return;
+  const tex = await el.createTexture(url);
+  el._tintTex = tex;
+  el._tintKey = key;
+  applyTintTex(el, tex);
+}
+
+function applyTintTex(el, tex) {
+  const model = el.model;
+  if (!model) return;
+  model.materials.forEach(function (mat) {
+    saveMat(mat);
+    const pbr = mat.pbrMetallicRoughness;
+    try {
+      if (pbr.baseColorTexture) pbr.baseColorTexture.setTexture(tex);
+    } catch (e) {}
+    try {
+      pbr.setBaseColorFactor([1, 1, 1, 1]);
+    } catch (e) {}
+  });
+}
+
+function clearCssTint() {
+  const stage = document.getElementById('stage');
+  if (stage) stage.style.filter = 'none';
+  layers.forEach(function (el) {
+    el.style.filter = 'none';
+  });
+}
+
+function paintTint() {
+  const gen = ++tintGen;
+  const rgb = tintRgb[window.FinniTint || ''];
+  clearCssTint();
+  layers.forEach(function (el) {
+    if (!rgb) {
+      restoreLayer(el);
+      return;
+    }
+    paintLayer(el, rgb).then(function () {
+      if (gen !== tintGen) return;
+    });
+  });
+}
+
+function setTint(color) {
+  window.FinniTint = color || '';
+  paintTint();
+}
+
 function showIncoming(incoming, startPlay) {
   const outgoing = incoming === layers[0] ? layers[1] : layers[0];
   front = incoming === layers[0] ? 0 : 1;
@@ -375,6 +641,7 @@ function showIncoming(incoming, startPlay) {
   outgoing.style.zIndex = '1';
   startPlay(incoming);
   incoming.style.opacity = '1';
+  paintTint();
   afterPaint(function () {
     hide(outgoing);
   });
@@ -449,15 +716,20 @@ function setBody(body) {
   window.FinniBody = body;
 }
 
-function show(body, name, asAction, loop) {
+function show(body, name, asAction, loop, color) {
   window.FinniBody = body;
+  if (color !== undefined) window.FinniTint = color || '';
   pendingAction = null;
   liveAction = null;
+  paintTint();
   if (asAction) playAction(name, !!loop);
   else playIdle(name);
 }
 
 layers.forEach(function (el) {
+  el.addEventListener('load', function () {
+    paintTint();
+  });
   el.addEventListener('finished', function () {
     if (mode === 'action' && liveAction && el === layers[front] && el.dataset.clip === liveAction) {
       try { FinniPet.postMessage('finished'); } catch (e) {}
@@ -468,7 +740,7 @@ layers.forEach(function (el) {
   });
 });
 
-window.Finni = { setBody: setBody, playIdle: playIdle, playAction: playAction, prepare: prepare, show: show, preload: preload };
+window.Finni = { setBody: setBody, playIdle: playIdle, playAction: playAction, prepare: prepare, show: show, preload: preload, setTint: setTint };
 customElements.whenDefined('model-viewer').then(function () {
   try { FinniPet.postMessage('ready'); } catch (e) {}
 });

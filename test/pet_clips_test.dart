@@ -36,6 +36,17 @@ void main() {
     expect(PetClips.returnsToIdle(PetClip.idleGood), isFalse);
   });
 
+  test('два тела и пять цветов закрывают минимум ТЗ', () {
+    expect(
+      PetColor.values.where((c) => c != PetColor.natural),
+      hasLength(5),
+    );
+    expect(
+      PetBody.values.length * 5,
+      greaterThanOrEqualTo(9),
+    );
+  });
+
   test('клип второго тела — nori', () {
     expect(
       PetClips.asset(PetClip.idleGood, PetBody.nori),
