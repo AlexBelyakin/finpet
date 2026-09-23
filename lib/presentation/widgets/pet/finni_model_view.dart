@@ -8,11 +8,15 @@ import 'finni_model_view_stub.dart'
 Widget buildPetModel({
   required PetClip clip,
   PetBody body = PetBody.finni,
+  PetColor? color,
+  bool tint = true,
   VoidCallback? onOneShotFinished,
 }) {
   return buildPetModelImpl(
     clip: clip,
     body: body,
+    color: color,
+    tint: tint,
     onOneShotFinished: onOneShotFinished,
   );
 }

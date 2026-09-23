@@ -47,7 +47,7 @@ void main() {
     await tester.tap(find.text('Играть!'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Выбери персонажа'), findsOneWidget);
+    expect(find.text('Выбери персонажа и цвет'), findsOneWidget);
     expect(find.text('Играть!'), findsOneWidget);
     controller.dispose();
 >>>>>>> main

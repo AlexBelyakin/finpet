@@ -151,6 +151,7 @@ class LivingPet extends StatelessWidget {
     this.onTap,
     this.onOneShotFinished,
     this.interactive = true,
+    this.tint = true,
   });
 
   final PetLook look;
@@ -160,6 +161,7 @@ class LivingPet extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onOneShotFinished;
   final bool interactive;
+  final bool tint;
 
   @override
   Widget build(BuildContext context) {
@@ -177,6 +179,8 @@ class LivingPet extends StatelessWidget {
               child: buildPetModel(
                 clip: clip,
                 body: look.body,
+                color: look.color,
+                tint: tint && look.paints,
                 onOneShotFinished: onOneShotFinished,
               ),
             ),
@@ -196,6 +200,7 @@ class FinniPetView extends StatelessWidget {
     this.clip,
     this.onTap,
     this.onOneShotFinished,
+    this.tint = true,
   });
 
   final Pet pet;
@@ -204,6 +209,7 @@ class FinniPetView extends StatelessWidget {
   final PetClip? clip;
   final VoidCallback? onTap;
   final VoidCallback? onOneShotFinished;
+  final bool tint;
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +230,7 @@ class FinniPetView extends StatelessWidget {
             clip: clip ?? PetClips.idleFor(pet),
             onTap: onTap,
             onOneShotFinished: onOneShotFinished,
+            tint: tint,
           ),
         ),
         if (showCaption) ...[
@@ -241,7 +248,7 @@ class FinniPetView extends StatelessWidget {
             ),
           ),
           Text(
-            '${pet.look.bodyLabel} · ${pet.stageLabel}',
+            pet.stageLabel,
             style: TextStyle(color: AppTheme.ink.withValues(alpha: 0.72)),
           ),
         ],

@@ -24,6 +24,8 @@ class PetViewerSession {
   PetClip? currentClip;
   PetClip? _wantClip;
   PetBody? _wantBody;
+  PetColor? _wantColor;
+  var _wantTint = true;
   Future<void>? _preparing;
   Completer<void>? _ready;
   var _applyGen = 0;
@@ -76,9 +78,16 @@ class PetViewerSession {
     );
   }
 
-  Future<void> apply(PetClip clip, PetBody body) async {
+  Future<void> apply(
+    PetClip clip,
+    PetBody body, {
+    PetColor? color,
+    bool tint = true,
+  }) async {
     _wantClip = clip;
     _wantBody = body;
+    _wantColor = color;
+    _wantTint = tint;
     final gen = ++_applyGen;
     try {
       await ensure();
@@ -104,8 +113,13 @@ class PetViewerSession {
       final bodyJs = jsonEncode(shownBody.name);
       final nameJs = jsonEncode(PetClips.clipName(shownClip));
       final asAction = PetClips.returnsToIdle(shownClip);
+      final colorJs = jsonEncode(
+        _wantTint && _wantColor != null && _wantColor != PetColor.natural
+            ? _wantColor!.name
+            : '',
+      );
       await web.runJavaScript(
-        'Finni.show($bodyJs, $nameJs, ${asAction ? 'true' : 'false'}, ${PetClips.isLoop(shownClip)});',
+        'Finni.show($bodyJs, $nameJs, ${asAction ? 'true' : 'false'}, ${PetClips.isLoop(shownClip)}, $colorJs);',
       );
       if (gen == _applyGen && !asAction) {
         unawaited(_preloadOther(shownBody));
@@ -113,6 +127,18 @@ class PetViewerSession {
     } finally {
       if (gen == _applyGen) PetModelBridge.applying.value = false;
     }
+  }
+
+  Future<void> tintOnly(PetColor? color, {required bool tint}) async {
+    _wantColor = color;
+    _wantTint = tint;
+    await _awaitReady();
+    final web = controller;
+    if (web == null) return;
+    final colorJs = jsonEncode(
+      tint && color != null && color != PetColor.natural ? color.name : '',
+    );
+    await web.runJavaScript('Finni.setTint($colorJs);');
   }
 
   Future<void> _preloadOther(PetBody shown) async {
@@ -179,6 +205,8 @@ Widget? petViewerWarmupImpl() {
 Widget buildPetModelImpl({
   required PetClip clip,
   PetBody body = PetBody.finni,
+  PetColor? color,
+  bool tint = true,
   VoidCallback? onOneShotFinished,
 }) {
   if (_inWidgetTest) {
@@ -189,6 +217,8 @@ Widget buildPetModelImpl({
   return _HostedPetModel(
     clip: clip,
     body: body,
+    color: color,
+    tint: tint,
     onOneShotFinished: onOneShotFinished,
   );
 }
@@ -197,11 +227,15 @@ class _HostedPetModel extends StatefulWidget {
   const _HostedPetModel({
     required this.clip,
     required this.body,
+    this.color,
+    this.tint = true,
     this.onOneShotFinished,
   });
 
   final PetClip clip;
   final PetBody body;
+  final PetColor? color;
+  final bool tint;
   final VoidCallback? onOneShotFinished;
 
   @override
@@ -237,15 +271,28 @@ class _HostedPetModelState extends State<_HostedPetModel> {
     super.didUpdateWidget(oldWidget);
     PetViewerSession.instance.onFinished = widget.onOneShotFinished;
     if (oldWidget.clip != widget.clip || oldWidget.body != widget.body) {
-      unawaited(PetViewerSession.instance.apply(widget.clip, widget.body));
+      unawaited(_apply());
+    } else if (oldWidget.color != widget.color || oldWidget.tint != widget.tint) {
+      unawaited(
+        PetViewerSession.instance.tintOnly(widget.color, tint: widget.tint),
+      );
     }
+  }
+
+  Future<void> _apply() {
+    return PetViewerSession.instance.apply(
+      widget.clip,
+      widget.body,
+      color: widget.color,
+      tint: widget.tint,
+    );
   }
 
   Future<void> _attach() async {
     await PetViewerSession.instance.ensure();
     if (!mounted) return;
     setState(() {});
-    await PetViewerSession.instance.apply(widget.clip, widget.body);
+    await _apply();
   }
 
   Future<void> _prepare(PetClip clip) {
@@ -253,7 +300,7 @@ class _HostedPetModelState extends State<_HostedPetModel> {
   }
 
   Future<void> _resume() {
-    return PetViewerSession.instance.apply(widget.clip, widget.body);
+    return _apply();
   }
 
   @override

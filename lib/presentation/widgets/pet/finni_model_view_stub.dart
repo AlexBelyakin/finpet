@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 Widget buildPetModelImpl({
   required PetClip clip,
   PetBody body = PetBody.finni,
+  PetColor? color,
+  bool tint = true,
   VoidCallback? onOneShotFinished,
 }) {
   return const FittedBox(

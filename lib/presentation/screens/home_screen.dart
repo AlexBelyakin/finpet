@@ -1148,13 +1148,23 @@ class _TaskBanner extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: value,
-                    minHeight: 6,
-                    backgroundColor: const Color(0xFFE4EEF6),
-                    color: const Color(0xFF4CC38A),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF5A534E),
+                      width: 1.5,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(1.5),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: value,
+                      minHeight: 8,
+                      backgroundColor: const Color(0xFFD5DDE4),
+                      color: const Color(0xFF4CC38A),
+                    ),
                   ),
                 ),
               ],
