@@ -20,6 +20,19 @@ class HomeHint {
 
 /// Короткие подсказки по значкам дома, один раз после создания питомца.
 abstract final class HomeHints {
+  /// Прямоугольник по стоящей фигуре, не по всему квадрату WebView.
+  static Rect holeOf(HintSpot spot, Rect raw) {
+    if (spot != HintSpot.pet) return raw;
+    final w = raw.width * 0.40;
+    final h = raw.height * 0.68;
+    return Rect.fromLTWH(
+      raw.center.dx - w / 2,
+      raw.top + raw.height * 0.16,
+      w,
+      h,
+    );
+  }
+
   static const steps = [
     HomeHint(
       title: 'Это твой дом',

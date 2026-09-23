@@ -135,17 +135,39 @@ class _DimPainter extends CustomPainter {
     final dim = Path()..addRect(Offset.zero & size);
     final holeRect = hole;
     if (holeRect != null) {
-      final local = holeRect.inflate(8);
+      final radius = holeRect.height > holeRect.width * 1.1 ? 10.0 : 18.0;
+      final box = RRect.fromRectAndRadius(holeRect, Radius.circular(radius));
       dim
-        ..addRRect(
-          RRect.fromRectAndRadius(local, const Radius.circular(24)),
-        )
+        ..addRRect(box)
         ..fillType = PathFillType.evenOdd;
+      canvas.drawPath(
+        dim,
+        Paint()..color = const Color(0x73000000),
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          holeRect.inflate(3),
+          Radius.circular(radius + 2),
+        ),
+        Paint()
+          ..color = const Color(0x88FFFFFF)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 8
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      canvas.drawRRect(
+        box,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5,
+      );
+    } else {
+      canvas.drawPath(
+        dim,
+        Paint()..color = const Color(0x73000000),
+      );
     }
-    canvas.drawPath(
-      dim,
-      Paint()..color = const Color(0x73000000),
-    );
   }
 
   @override

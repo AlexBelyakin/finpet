@@ -3,6 +3,7 @@ import 'package:finpet/app/pet_clips.dart';
 import 'package:finpet/domain/content/catalog.dart';
 import 'package:finpet/domain/models.dart';
 import 'package:finpet/presentation/widgets/common.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -45,6 +46,15 @@ void main() {
   test('подсказки дома покрывают значки', () {
     expect(HomeHints.steps.length, 6);
     expect(HomeHints.steps.first.title, 'Это твой дом');
+  });
+
+  test('вырез под питомца — прямоугольник на фигуре', () {
+    final raw = Rect.fromLTWH(40, 80, 300, 300);
+    final hole = HomeHints.holeOf(HintSpot.pet, raw);
+    expect(hole.width, inInclusiveRange(raw.width * 0.32, raw.width * 0.48));
+    expect(hole.height, inInclusiveRange(raw.height * 0.58, raw.height * 0.78));
+    expect(hole.center.dx, closeTo(raw.center.dx, 0.5));
+    expect(HomeHints.holeOf(HintSpot.wallet, raw), raw);
   });
 
   test('после задания хвалят и за успех, и за попытку', () {

@@ -113,7 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
           box.size.bottomRight(Offset.zero),
           ancestor: overlay,
         );
-        hole = Rect.fromPoints(topLeft, bottomRight);
+        hole = HomeHints.holeOf(
+          spot,
+          Rect.fromPoints(topLeft, bottomRight),
+        );
       }
       if (hole != _hintHole) setState(() => _hintHole = hole);
     }
@@ -149,7 +152,9 @@ class _HomeScreenState extends State<HomeScreen> {
         HomeHints.steps[_hintIndex!].spot == spot;
     return KeyedSubtree(
       key: _spots[spot],
-      child: SpotGlow(active: on, child: child),
+      child: spot == HintSpot.pet
+          ? child
+          : SpotGlow(active: on, child: child),
     );
   }
 
@@ -434,6 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
                                   child: _NavHud(
@@ -911,17 +917,17 @@ class _StatHud extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 46,
-          height: 46,
+          width: 48,
+          height: 48,
           child: ProgressRing(
             value: percent / 100,
             color: color,
-            size: 46,
+            size: 48,
             stroke: 4,
-            child: Icon(icon, color: iconColor ?? color, size: 20),
+            child: Icon(icon, color: iconColor ?? color, size: 22),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
@@ -972,17 +978,17 @@ class _StarHud extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 52,
-          height: 52,
+          width: 48,
+          height: 48,
           child: ProgressRing(
             value: progress,
             color: ring,
-            size: 52,
+            size: 48,
             stroke: 4,
-            child: const Icon(Icons.star_rounded, color: star, size: 30),
+            child: const Icon(Icons.star_rounded, color: star, size: 26),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(

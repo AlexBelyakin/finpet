@@ -160,8 +160,12 @@ class GameController extends ChangeNotifier {
       petName: petName,
       look: look,
     );
+    await PetModelRuntime.instance.ensureBody(
+      look.body,
+      idle: PetClip.idleGood,
+      warm: true,
+    );
     await _commit(result);
-    unawaited(PetModelRuntime.instance.ensureBody(look.body));
     return result;
   }
 
