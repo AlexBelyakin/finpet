@@ -190,7 +190,7 @@ const rows: RowItem[] = [
     section: "3",
     id: "3.2 Стек",
     need: "Клиент Android; контент отдельно от UI; сервер не обязателен",
-    have: "Flutter без сервера. UI → Controller → Economy / Catalog → профиль. Тесты в экономику, не в виджеты. 3D — model-viewer и два слоя. Плюсы стека в README",
+    have: "Что выбрали, зачем и плюсы подхода — README, раздел «Стек»",
     status: "есть",
   },
   {

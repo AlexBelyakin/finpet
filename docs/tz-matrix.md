@@ -62,7 +62,7 @@ flutter test
 |---|---|---|---|---|
 | 3.1 Android 8+ | minSdk 26, портрет, планшет плюс | есть | `android/app/build.gradle.kts` `minSdk = 26` | `widget_test`: планшет 2560×1600. Живой прогон 25.09.2026, POCO M8 5G: старые GLB (473 МБ) грузили устройство, новые (176 МБ) прошли ровно. У Ильи — эмулятор Pixel 6a и адаптивность на планшетном AVD. Живой планшет не гоняли. |
 | 3.1 Офлайн | Без камеры/гео, цикл без сети | есть | `AndroidManifest`: только `INTERNET` (localhost GLB) | Профиль в `SharedPreferences`. Сеть магазину не нужна. |
-| 3.2 Стек | Клиент Android, контент отдельно | есть | `presentation` → `GameController` → `Economy` → `Catalog` → `ProfileStore` | Один клиент без сервера. Контент и формулы отдельно от UI, тесты бьют в `Economy` / `Catalog`. 3D — `model-viewer` и два слоя плеера. Плюсы стека — в README. |
+| 3.2 Стек | Клиент Android, контент отдельно | есть | `presentation` → `GameController` → `Economy` → `Catalog` → `ProfileStore` | Что выбрали, зачем и плюсы подхода — README, раздел «Стек». |
 | 3.3 Сборка и RuStore | Подпись, свой package, карточка | нет | — | Не делали: пакет `com.example.finpet`, debug-подпись на release. Документы магазина не в этом пакете. |
 | 3.4 Архитектура и тесты | Слои, README, без секретов, экономика | частично | этот `docs/`, `test/economy_test.dart` | Автотесты экономики есть, секретов в git нет (`key.properties` в ignore). Заставка 8 с — уже стартовый экран. Пошаговая сборка APK — `docs/handover.md`. |
 | 3.5 Ребёнок | Нет ПДн, рекламы, IAP, стыда | есть | гость, нейтральные тексты | Код и QA. Платежей нет. |
