@@ -643,9 +643,6 @@ PDF ТЗ в git не лежит. По смыслу сдачи ещё откры�
 | `Ilya` | Илья |
 | `main` | общее готовое |
 
-Пуш **сначала в `Alex`**. В `main` — только если Александр явно сказал.
-В `main` не пишут оба сразу.
-
 В ignore: `build/`, `.dart_tool/`, `**/ephemeral/`, `.idea/`, PDF ТЗ,
 **`drops/`**, **`/meshy/`**, **`/Meshy_AI_*/`**. Фоны в сборке — JPEG из
 `pubspec.yaml`. Клипы — `assets/models/finni/` и `nori/`. Шрифты — `assets/fonts/`.
