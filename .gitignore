@@ -66,6 +66,7 @@ ios/Flutter/Flutter.podspec
 # Local Meshy dump (клипы уже в assets/models/finni/ и nori/)
 /Meshy_AI_*/
 /meshy/
+/модели/
 
 # Local agent files
 .cursor/

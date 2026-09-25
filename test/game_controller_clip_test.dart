@@ -25,4 +25,20 @@ void main() {
     controller.presentQueuedClip();
     expect(controller.petClip, PetClip.taskRight);
   });
+
+  test('тап во время реакции не сменяет клип', () async {
+    SharedPreferences.setMockInitialValues({});
+    final controller = GameController(ProfileStore());
+    await controller.load();
+    await controller.createPet(
+      playerName: 'Саша',
+      petName: 'Финни',
+      look: Catalog.looks.first,
+    );
+    controller.playClipNow(PetClip.reactJoy);
+    expect(controller.petActing, isTrue);
+    controller.reactToPetTap();
+    expect(controller.petClip, PetClip.reactJoy);
+    controller.dispose();
+  });
 }

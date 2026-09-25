@@ -7,5 +7,6 @@
 | [tz-matrix.md](tz-matrix.md) | 5.5 матрица требований: статус, экран, модуль, как проверено |
 | [economy-and-content.md](economy-and-content.md) | 5.6–5.8 формулы, карта заданий, обоснование UX |
 | [handover.md](handover.md) | 5.1–5.4 и 5.9–5.12: сборка APK, разрешения, сброс, тесты, лицензии, ограничения |
+| [tz-coverage.canvas.tsx](tz-coverage.canvas.tsx) | Живая сверка с ТЗ (копия канваса) |
 
 Карточка RuStore и релизный keystore сюда не входят.

@@ -79,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onPetTap() {
     final pet = widget.controller.profile.pet;
     if (pet == null) return;
+    if (widget.controller.petActing) return;
     widget.controller.reactToPetTap();
     final lines = _speechLines(pet);
     _speechIdx = (_speechIdx + 1) % lines.length;

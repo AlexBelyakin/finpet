@@ -29,6 +29,9 @@ class GameController extends ChangeNotifier {
     return PetClips.idleFor(pet);
   }
 
+  /// Разовая реакция или смена стадии ещё на экране.
+  bool get petActing => _playingClip != null;
+
   /// Клип после выхода на дом: покупка, задание, копилка, мини-игра.
   void queueEventClip(PetClip clip) {
     _clipTimer?.cancel();
