@@ -7,7 +7,7 @@
 | [tz-matrix.md](tz-matrix.md) | 5.5 матрица: таблица сверки на GitHub (пункт, статус, экран, как проверено) |
 | [economy-and-content.md](economy-and-content.md) | 5.6–5.8 формулы, карта заданий, обоснование UX |
 | [handover.md](handover.md) | 5.1–5.4 и 5.9–5.12: сборка APK, разрешения, сброс, тесты, лицензии, ограничения |
-| [tz-coverage.canvas.tsx](tz-coverage.canvas.tsx) | Живая сверка с ТЗ (копия канваса Cursor) |
+| [tz-coverage.md](tz-coverage.md) | Сверка с ТЗ |
 
 Что делали с помощью ИИ: [`ИИ контент 1.docx`](../ИИ%20контент%201.docx) в корне репозитория. Нажмите ссылку → справа сверху **Download raw file** → откройте скачанный `.docx` в Word или Google Документах. GitHub сам файл не покажет.
 
